@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Guía de Entrega</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+
+        td,
+        th {
+            vertical-align: top;
+        }
+
+        /* CABECERA (Estilo Original Azul) */
+        .header-table {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 15px;
+        }
+
+        .company-info h1 {
+            margin: 0;
+            font-size: 18pt;
+            color: #2c3e50;
+            text-transform: uppercase;
+        }
+
+        .company-info p {
+            margin: 5px 0 0 0;
+            font-size: 9pt;
+            color: #555;
+        }
+
+        .document-info {
+            text-align: right;
+        }
+
+        .doc-title {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #2c3e50;
+            text-transform: uppercase;
+        }
+
+        .doc-number {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #e74c3c;
+            /* Rojo del número */
+            margin-top: 5px;
+        }
+
+        .doc-date {
+            font-size: 10pt;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        /* CAJA DEL CLIENTE (Original) */
+        .client-box {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+
+        .client-box strong {
+            color: #2c3e50;
+            display: inline-block;
+            width: 90px;
+        }
+
+        .client-row {
+            margin-bottom: 5px;
+        }
+
+        /* TABLA DE PRODUCTOS (Original Azul) */
+        .items-table {
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .items-table th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: bold;
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #2c3e50;
+            font-size: 9pt;
+        }
+
+        .items-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        /* SECCIÓN INFERIOR */
+        .bottom-container {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        /* Totales a la derecha */
+        .totals-table {
+            width: 40%;
+            float: right;
+        }
+
+        .totals-table td {
+            padding: 5px;
+            border: none;
+        }
+
+        .totals-label {
+            text-align: right;
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 14pt;
+        }
+
+        /* ESTILO CORREGIDO PARA VENTA TOTAL (Negro) */
+        .totals-value {
+            text-align: right;
+            border-bottom: 1px solid #ddd;
+            font-size: 14pt;
+            color: #000000;
+            /* NEGRO */
+            font-weight: bold;
+        }
+
+        /* Bancos a la izquierda */
+        .bank-info {
+            width: 55%;
+            float: left;
+            font-size: 9pt;
+            color: #555;
+        }
+
+        .bank-logos img {
+            height: 25px;
+            margin-right: 10px;
+            vertical-align: middle;
+            margin-top: 5px;
+        }
+
+        /* PIE DE PAGINA */
+        .footer-slogan {
+            text-align: center;
+            margin-top: 50px;
+            font-style: italic;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #e74c3c;
+            /* ROJO */
+            clear: both;
+        }
+    </style>
+</head>
+
+<body>
+
+    <table class="header-table">
+        <tr>
+            <td width="60%" class="company-info">
+                <h1>Creaciones M&M</h1>
+                <p>Fabricación de Material Didáctico<br>Carabayllo, Lima, Perú</p>
+                <p>Cel: 977 167 119 / 906 196 891</p>
+            </td>
+            <td width="40%" class="document-info">
+                <div class="doc-title">GUÍA DE ENTREGA</div>
+                <div class="doc-number">N° {{ guia.numero_guia }}</div>
+                <div class="doc-date">{{ guia.fecha_emision|date:"d/m/Y" }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="client-box">
+        <div class="client-row"><strong>CLIENTE:</strong> {{ guia.cliente.nombre_contacto }}</div>
+        <div class="client-row"><strong>EMPRESA:</strong> {{ guia.cliente.nombre_empresa|default:"-" }}</div>
+        <div class="client-row"><strong>DIRECCIÓN:</strong> {{ guia.direccion_entrega }}</div>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="10%">CANT.</th>
+                <th width="50%" style="text-align:left;">DESCRIPCIÓN</th>
+                <th width="20%">P. UNIT</th>
+                <th width="20%">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detalle in detalles %}
+            <tr>
+                <td class="text-center">{{ detalle.cantidad }}</td>
+                <td>{{ detalle.producto.nombre }}</td>
+                <td class="text-right">S/. {{ detalle.precio_aplicado|floatformat:2 }}</td>
+                <td class="text-right"><strong>S/. {{ detalle.total_linea|floatformat:2 }}</strong></td>
+            </tr>
+            {% endfor %}
+
+            {% if detalles|length < 5 %} <tr>
+                <td colspan="4" style="height: 30px;"></td>
+                </tr>
+                {% endif %}
+        </tbody>
+    </table>
+
+    <div class="bottom-container">
+
+        <div class="bank-info">
+            <strong>MÉTODOS DE PAGO:</strong><br>
+            Transferencias a nombre de la empresa.<br>
+            <div class="bank-logos">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Logo_BCP.png" alt="BCP">
+                <img src="https://seeklogo.com/images/Y/yape-logo-3E473EE7E5-seeklogo.com.png" alt="Yape">
+                <img src="https://seeklogo.com/images/P/plin-logo-9D7209E4B9-seeklogo.com.png" alt="Plin">
+            </div>
+            <p style="margin-top: 5px;">Cuentas: BCP / YAPE / PLIN</p>
+            <p style="font-size: 8pt; margin-top: 5px;">* No hay devoluciones una vez retirada la mercadería.</p>
+        </div>
+
+        <table class="totals-table">
+            <tr>
+                <td class="totals-label">VENTA TOTAL:</td>
+                <td class="totals-value">S/. {{ guia.total_venta|floatformat:2 }}</td>
+            </tr>
+        </table>
+
+        <div style="clear: both;"></div>
+    </div>
+
+    <div class="footer-slogan">
+        "NUESTRO MOTIVO ERES TÚ..... ¡Gracias por tu Preferencia!"
+    </div>
+
+</body>
+
+</html>
