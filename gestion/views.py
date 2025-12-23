@@ -10,6 +10,7 @@ from xhtml2pdf import pisa
 from .models import GuiaEntrega, Producto, Gasto, Cliente
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required # <--- IMPORTANTE: El candado
+from django.http import HttpResponse
 
 # --- VISTA 1: GENERADOR DE PDF ---
 def generar_pdf_guia(request, guia_id):
@@ -170,3 +171,5 @@ def exportar_reporte_excel(request):
     
     wb.save(response)
     return response
+def health_check(request):
+    return HttpResponse("OK")

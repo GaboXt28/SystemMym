@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 def crear_admin():
-    username = "Creaciones"           # Tu usuario
+    username = "admin"           # Tu usuario
     password = "admin123"        # Tu contraseña temporal
     email = "ggabogarcia28@gmail.com"
 
