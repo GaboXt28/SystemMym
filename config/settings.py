@@ -1,6 +1,6 @@
 """
 Django settings for config project.
-Updated for Production and Jazzmin customization.
+Updated for Debugging in Production.
 """
 import os
 import dj_database_url
@@ -10,15 +10,20 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# En producción idealmente esto viene de una variable de entorno, pero por ahora lo dejamos así.
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-nae_=9++)5)-(_!6me6c_!^5ot_aj@r^vjkmpdt1=l0ovn*wz6')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# Esto detecta si estás en Render/Railway para desactivar el modo Debug automáticamente
-DEBUG = 'RENDER' not in os.environ
+# --- CAMBIO 1: ACTIVAR DEBUG SIEMPRE (TEMPORAL) ---
+# Esto nos mostrará el error real en pantalla en lugar del Error 500.
+# Cuando arreglemos el problema, volveremos a ponerlo en False.
+DEBUG = True 
 
-# Permitimos todos los hosts para evitar errores al desplegar
 ALLOWED_HOSTS = ['*']
+
+# --- CAMBIO 2: ORIGENES DE CONFIANZA ---
+# Necesario para que Django te deje loguearte en https
+CSRF_TRUSTED_ORIGINS = [
+    'https://systemmym.onrender.com',
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -34,7 +39,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- ESENCIAL PARA ESTILOS EN LA NUBE
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- ESENCIAL PARA ESTILOS
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,10 +68,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
-# --- BASE DE DATOS (Configuración Híbrida) ---
-# Si hay una URL de base de datos en el entorno (Nube), usa esa (PostgreSQL).
-# Si no, usa el archivo db.sqlite3 local.
+# --- BASE DE DATOS ---
 DATABASES = {
     'default': dj_database_url.config(
         default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
@@ -74,50 +76,52 @@ DATABASES = {
     )
 }
 
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-
-# --- INTERNACIONALIZACIÓN (Configuración para Perú) ---
-LANGUAGE_CODE = 'es-pe'  # Español Perú
-
-TIME_ZONE = 'America/Lima' # Hora de Perú
-
+# --- INTERNACIONALIZACIÓN ---
+LANGUAGE_CODE = 'es-pe'  
+TIME_ZONE = 'America/Lima' 
 USE_I18N = True
-
 USE_TZ = True
 
-
 # --- ARCHIVOS ESTÁTICOS Y MEDIA ---
-
 STATIC_URL = 'static/'
-
-# Esto le dice a Django dónde reunir todos los archivos estáticos al desplegar
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Configuración de WhiteNoise para comprimir y servir archivos eficientemente
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Configuración para subir imágenes (Productos, logos, etc.)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# --- CAMBIO 3: SISTEMA DE LOGS PARA RENDER ---
+# Esto obliga a Django a imprimir los errores en la consola de Render
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
 
-# --- CONFIGURACIÓN DE JAZZMIN (INTERFAZ) ---
+# --- CONFIGURACIÓN DE JAZZMIN ---
 JAZZMIN_SETTINGS = {
     "site_title": "Admin MyM",
     "site_header": "Sistema MyM",
@@ -146,16 +150,12 @@ JAZZMIN_SETTINGS = {
     "default_icon_children": "fas fa-circle",
     "show_ui_builder": False,
     "changeform_format": "horizontal_tabs",
-    
-    # Custom JS
     "custom_js": "gestion/js/custom_admin.js",
 }
 
-# --- REDIRECCIONES CLAVE ---
 LOGIN_REDIRECT_URL = 'home' 
 LOGOUT_REDIRECT_URL = '/adminconfiguracion/login/'
 
-# Colores y Tema
 JAZZMIN_UI_TWEAKS = {
     "theme": "flatly",
     "navbar": "navbar-dark",
