@@ -22,15 +22,12 @@
                         <select name="anio" class="form-control bg-light border-primary" style="font-weight: bold;"
                             onchange="this.form.submit()">
 
-                            {% for fecha in anios_disponibles %}
-                            <option value="{{ fecha.year }}" {% if fecha.year==anio_seleccionado %}selected{% endif %}>
-                                {{ fecha.year }}
+                            {% for anio in anios_disponibles %}
+                            <option value="{{ anio }}" {% if anio==anio_seleccionado %}selected{% endif %}>
+                                {{ anio }}
                             </option>
                             {% endfor %}
 
-                            {% if anio_seleccionado not in anios_disponibles|date:"Y" %}
-                            <option value="{{ anio_seleccionado }}" selected>{{ anio_seleccionado }}</option>
-                            {% endif %}
                         </select>
                     </form>
 

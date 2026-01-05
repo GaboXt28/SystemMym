@@ -1,7 +1,7 @@
 import openpyxl 
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse, JsonResponse # <--- Agregado JsonResponse para la API
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
 from django.db.models import Sum
 from django.utils import timezone
@@ -26,8 +26,7 @@ def generar_pdf_guia(request, guia_id):
     template_path = 'gestion/guia_pdf.html'
     response = HttpResponse(content_type='application/pdf')
     
-    # --- CAMBIO: Lógica para ver en navegador o descargar ---
-    # Si la URL tiene ?ver=true, se muestra inline (en pestaña). Si no, se descarga.
+    # Lógica para ver en navegador o descargar
     tipo_visualizacion = 'inline' if request.GET.get('ver') == 'true' else 'attachment'
     response['Content-Disposition'] = f'{tipo_visualizacion}; filename="Guia-{guia.numero_guia}.pdf"'
     
@@ -58,15 +57,22 @@ def dashboard_analiticas(request):
     ventas = GuiaEntrega.objects.filter(fecha_emision__year=anio_seleccionado)
     gastos = Gasto.objects.filter(fecha_emision__year=anio_seleccionado)
 
-    # 3. Obtener lista de años para el selector (dropdown)
-    anios_disponibles = GuiaEntrega.objects.dates('fecha_emision', 'year', order='DESC')
+    # 3. Obtener lista de años para el selector (ARREGLADO)
+    # Convertimos los objetos 'Date' de la base de datos a una lista simple de números [2026, 2025...]
+    fechas_disponibles = GuiaEntrega.objects.dates('fecha_emision', 'year', order='DESC')
+    lista_anios = [f.year for f in fechas_disponibles]
+
+    # Si el año seleccionado (ej: 2026) es nuevo y no tiene ventas aún,
+    # lo agregamos manualmente a la lista para que aparezca en el menú.
+    if anio_seleccionado not in lista_anios:
+        lista_anios.insert(0, anio_seleccionado)
 
     # 4. Cálculos Matemáticos
     total_ventas = ventas.aggregate(total=Sum('total_venta'))['total'] or 0
     total_cobrado = ventas.aggregate(total=Sum('monto_cobrado'))['total'] or 0
     total_gastos = gastos.aggregate(total=Sum('monto'))['total'] or 0
     
-    # Deuda calle (Esta siempre es histórica, no importa el año, queremos saber quién debe HOY)
+    # Deuda calle (Esta siempre es histórica)
     deuda_calle = 0
     for g in GuiaEntrega.objects.exclude(estado_pago='PAGADO'):
         deuda_calle += (g.total_venta - g.monto_cobrado)
@@ -89,8 +95,8 @@ def dashboard_analiticas(request):
         'deuda_calle': deuda_calle,
         'productos_bajo_stock': productos_bajo_stock,
         'ultimas_ventas': ultimas_ventas,
-        'anio_seleccionado': anio_seleccionado,  # <--- Enviamos el año elegido
-        'anios_disponibles': anios_disponibles,  # <--- Enviamos la lista de años
+        'anio_seleccionado': anio_seleccionado,
+        'anios_disponibles': lista_anios,  # <--- Enviamos la lista limpia de números
     })
     
     return render(request, 'gestion/dashboard.html', context)
