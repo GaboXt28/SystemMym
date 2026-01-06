@@ -50,13 +50,22 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
     autocomplete_fields = ['cliente']
     ordering = ('-fecha_emision', '-numero_guia')
 
-    # --- TRUCO PARA OCULTAR EL 2025 POR DEFECTO ---
+ # --- VERSIÓN CORREGIDA PARA QUE EL BOTÓN "TODAS" FUNCIONE ---
     def changelist_view(self, request, extra_context=None):
-        # Si NO hay parámetros en la URL (significa que acabas de entrar limpio)
-        if not request.GET:
+        # 1. Obtenemos de dónde viene el usuario (Referer)
+        referer = request.META.get('HTTP_REFERER', '')
+        
+        # 2. Obtenemos la ruta actual (ej: /admin/gestion/guiaentrega/)
+        path_actual = request.path
+        
+        # LÓGICA INTELIGENTE:
+        # Solo forzamos el 2026 si NO hay filtros (request.GET vacío)
+        # Y ADEMÁS el usuario viene de "afuera" (el referer no contiene la ruta actual).
+        # Si el usuario ya estaba aquí y dio clic a "Todas", el referer tendrá la ruta actual, 
+        # así que no entraremos al if y le dejaremos ver todo.
+        
+        if not request.GET and path_actual not in referer:
             anio_actual = timezone.now().year
-            # Redirigimos forzosamente a ?fecha_emision__year=2026
-            # Así la tabla carga filtrada y limpia.
             q = request.GET.copy()
             q['fecha_emision__year'] = anio_actual
             return HttpResponseRedirect(f"{request.path}?{q.urlencode()}")
