@@ -27,7 +27,10 @@ class Cliente(models.Model):
 class GuiaEntrega(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)
     asesor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    numero_guia = models.CharField(max_length=20, unique=True)
+    
+    # --- CAMBIO: Se quitó unique=True para permitir repetir números en años distintos ---
+    numero_guia = models.CharField(max_length=20) 
+    
     fecha_emision = models.DateField(default=timezone.now)
     direccion_entrega = models.CharField(max_length=255)
     
@@ -57,10 +60,26 @@ class GuiaEntrega(models.Model):
         self.save(update_fields=['monto_cobrado', 'estado_pago'])
 
     def save(self, *args, **kwargs):
+        # Lógica de autonumeración por año
+        if not self.pk and not self.numero_guia:
+            anio_actual = self.fecha_emision.year
+            
+            # Buscamos la última guía SOLO de este año para seguir la secuencia
+            ultima = GuiaEntrega.objects.filter(
+                fecha_emision__year=anio_actual
+            ).order_by('numero_guia').last()
+            
+            if ultima and ultima.numero_guia.isdigit():
+                nuevo = int(ultima.numero_guia) + 1
+                self.numero_guia = str(nuevo).zfill(6)
+            else:
+                self.numero_guia = '000001'
+        
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Guía #{self.numero_guia} - {self.cliente}"
+        # --- CAMBIO: Mostramos el año para identificar la guía fácilmente ---
+        return f"Guía #{self.numero_guia} ({self.fecha_emision.year}) - {self.cliente}"
     
     class Meta:
         verbose_name = "Guía de Entrega"
@@ -124,7 +143,6 @@ class Proveedor(models.Model):
     ]
     razon_social = models.CharField(max_length=150, verbose_name="Empresa / Nombre")
     tipo = models.CharField(max_length=20, choices=TIPOS, default='INSUMOS')
-    # AQUÍ ESTABA EL ERROR, YA LO CORREGÍ:
     ruc_dni = models.CharField(max_length=20, blank=True, verbose_name="RUC/DNI")
     telefono = models.CharField(max_length=20, blank=True)
     
