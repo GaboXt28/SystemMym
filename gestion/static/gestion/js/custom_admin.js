@@ -1,28 +1,58 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Buscamos TODOS los enlaces del menú lateral
+    const $ = django.jQuery; 
+
+    // 1. LÓGICA DEL CLIENTE -> DIRECCIÓN (NUEVO)
+    const selectCliente = $('#id_cliente');
+    const inputDireccion = $('#id_direccion_entrega');
+
+    selectCliente.on('change', function() {
+        let clienteId = $(this).val();
+        if (clienteId) {
+            // Pedimos la dirección al servidor
+            $.ajax({
+                url: '/api/cliente/' + clienteId + '/direccion/',
+                type: 'GET',
+                success: function(data) {
+                    if (data.direccion) {
+                        inputDireccion.val(data.direccion);
+                    }
+                }
+            });
+        }
+    });
+
+    // 2. LÓGICA DEL DASHBOARD (Para arreglar el menú lateral)
     const links = document.querySelectorAll('.nav-sidebar .nav-link');
-
     for (let link of links) {
-        // Buscamos SOLO el enlace que se llama "Dashboard" original
-        // Jazzmin le suele poner la ruta /adminconfiguracion/ o /admin/
         if (link.textContent.trim() === "Dashboard") {
-
-            // 1. Cambiamos a dónde va
             link.href = "/dashboard/";
-
-            // 2. Cambiamos cómo se ve
-            link.innerHTML = `
-                <i class="nav-icon fas fa-chart-pie text-warning"></i>
-                <p>Dashboard Gerencial</p>
-            `;
-
-            // 3. Si estamos en el dashboard, lo marcamos activo
+            link.innerHTML = `<i class="nav-icon fas fa-chart-pie text-warning"></i><p>Dashboard Gerencial</p>`;
             if (window.location.pathname === "/dashboard/") {
                 link.classList.add("active");
             }
-
-            // 4. ¡IMPORTANTE! Rompemos el ciclo para que solo cambie UNO
             break;
         }
     }
+
+    // 3. LÓGICA DE PRECIOS AUTOMÁTICOS
+    function actualizarFila(fila) {
+        let selectProducto = fila.find('select[name$="-producto"]');
+        let inputPrecio = fila.find('input[name$="-precio_aplicado"]');
+
+        selectProducto.on('change', function() {
+            let productoId = $(this).val();
+            if (productoId) {
+                $.ajax({
+                    url: '/api/producto/' + productoId + '/',
+                    success: function(data) {
+                        inputPrecio.val(data.precio);
+                    }
+                });
+            } else {
+                inputPrecio.val('');
+            }
+        });
+    }
+    $(document).on('formset:added', function(event, $row) { actualizarFila($row); });
+    $('.dynamic-detalles').each(function() { actualizarFila($(this)); });
 });
