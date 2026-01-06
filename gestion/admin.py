@@ -1,102 +1,108 @@
+
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
-from .models import Producto, Cliente, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto
+from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto
 
-# --- CONFIGURACIÓN DE PANELES (INLINES) ---
+# --- 1. CONFIGURACIÓN DE PRODUCTOS (Con Alerta de Colores) ---
+@admin.register(Producto)
+class ProductoAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'precio_unitario', 'stock_actual', 'alerta_stock')
+    search_fields = ('nombre',)
+    list_editable = ('stock_actual', 'precio_unitario')
+    list_per_page = 20
+
+    def alerta_stock(self, obj):
+        # Si el stock es 10 o menos, sale rojo. Si no, verde.
+        if obj.stock_actual <= 10:
+            return format_html('<span style="color:red; font-weight:bold;">⚠️ BAJO ({})</span>', obj.stock_actual)
+        return format_html('<span style="color:green; font-weight:bold;">✅ OK ({})</span>', obj.stock_actual)
+    alerta_stock.short_description = "Estado Stock"
+
+# --- 2. CONFIGURACIÓN DE CLIENTES ---
+@admin.register(Cliente)
+class ClienteAdmin(admin.ModelAdmin):
+    list_display = ('nombre_contacto', 'nombre_empresa', 'celular', 'ciudad')
+    search_fields = ('nombre_contacto', 'nombre_empresa')
+    list_filter = ('ciudad',)
+
+# --- 3. CONFIGURACIÓN DE GUÍAS DE ENTREGA (El Cerebro del Sistema) ---
 class DetalleGuiaInline(admin.TabularInline):
     model = DetalleGuia
     extra = 1
     autocomplete_fields = ['producto']
+    min_num = 1 # Obliga a poner al menos 1 producto
 
 class PagoInline(admin.TabularInline):
     model = Pago
     extra = 0
-    verbose_name = "Abono / Pago"
-    verbose_name_plural = "Historial de Pagos"
 
-# --- ADMINISTRACIÓN DE GUÍA ---
 @admin.register(GuiaEntrega)
 class GuiaEntregaAdmin(admin.ModelAdmin):
-    list_display = ('numero_guia', 'fecha_emision', 'cliente', 'estado_pago', 'boton_pdf')
-    list_filter = ('estado_pago', 'fecha_emision', 'asesor')
-    search_fields = ('numero_guia', 'cliente__nombre_contacto')
-    readonly_fields = ('boton_pdf', 'total_venta', 'monto_cobrado', 'estado_pago')
+    # Columnas visibles
+    list_display = ('numero_guia_visual', 'cliente', 'fecha_emision', 'total_venta', 'estado_pago_color', 'acciones_pdf')
+    
+    # Filtros laterales y Búsqueda
+    list_filter = ('estado_pago', 'fecha_emision') 
+    search_fields = ('numero_guia', 'cliente__nombre_contacto', 'cliente__nombre_empresa')
+    
+    # --- LA MAGIA: Navegación por Años ---
+    # Esto crea las pestañas de años arriba de la tabla
+    date_hierarchy = 'fecha_emision' 
+    
+    # Componentes dentro del formulario
     inlines = [DetalleGuiaInline, PagoInline]
-
-    def save_model(self, request, obj, form, change):
-        if not obj.asesor:
-            obj.asesor = request.user
-        super().save_model(request, obj, form, change)
-
-    def boton_pdf(self, obj):
-        if obj.pk:
-            url = reverse('imprimir_guia', args=[obj.pk])
-            # Usamos {} para el enlace también, es más seguro
-            return format_html('<a class="button" href="{}" target="_blank" style="background-color:#e74c3c; color:white; padding:5px 10px;">{}</a>', url, 'Descargar PDF')
-        return "Guardar primero"
+    autocomplete_fields = ['cliente']
     
-    boton_pdf.short_description = "PDF"
-    boton_pdf.allow_tags = True
+    # Orden: Lo más reciente primero
+    ordering = ('-fecha_emision', '-numero_guia')
 
-    class Media:
-        js = ('gestion/js/admin_calculo.js',)
+    # Campo visual para el número de guía
+    def numero_guia_visual(self, obj):
+        return format_html('<b style="color: #2c3e50;">#{}</b>', obj.numero_guia)
+    numero_guia_visual.short_description = "N° Guía"
 
-# --- OTROS MODELOS ---
-@admin.register(Producto)
-class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'precio_unitario', 'stock_actual')
-    search_fields = ('nombre',)
+    # Colorear el estado de pago
+    def estado_pago_color(self, obj):
+        colores = {
+            'PENDIENTE': 'red',
+            'PARCIAL': 'orange',
+            'PAGADO': 'green',
+        }
+        color = colores.get(obj.estado_pago, 'black')
+        return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.get_estado_pago_display())
+    estado_pago_color.short_description = "Estado Pago"
 
-@admin.register(Cliente)
-class ClienteAdmin(admin.ModelAdmin):
-    list_display = ('nombre_contacto', 'nombre_empresa', 'ver_deuda_total')
-    
-    def ver_deuda_total(self, obj):
-        deuda = 0
-        for guia in obj.guiaentrega_set.all():
-            if guia.estado_pago != 'PAGADO':
-                deuda += (guia.total_venta - guia.monto_cobrado)
-        return f"S/. {deuda}"
-    
-    ver_deuda_total.short_description = "Deuda Total"
+    # Botones de Acción (PDF)
+    def acciones_pdf(self, obj):
+        # Generamos las URLs usando el ID de la guía
+        try:
+            url_descargar = reverse('imprimir_guia', args=[obj.id])
+            url_ver = f"{url_descargar}?ver=true"
+            return format_html(
+                '<a class="button" href="{}" target="_blank" style="background-color:#17a2b8; color:white; padding:3px 8px; border-radius:3px;">👁️ Ver</a>&nbsp;'
+                '<a class="button" href="{}" style="background-color:#6c757d; color:white; padding:3px 8px; border-radius:3px;">📥 PDF</a>',
+                url_ver, url_descargar
+            )
+        except:
+            return "-"
+    acciones_pdf.short_description = "Documentos"
 
-# --- MÓDULO DE FINANZAS (NUEVO) ---
+# --- 4. CONFIGURACIÓN DE FINANZAS ---
 @admin.register(Proveedor)
 class ProveedorAdmin(admin.ModelAdmin):
-    list_display = ('razon_social', 'tipo', 'telefono')
+    list_display = ('razon_social', 'tipo', 'telefono', 'ruc_dni')
+    search_fields = ('razon_social', 'ruc_dni')
     list_filter = ('tipo',)
-    search_fields = ('razon_social',)
 
 @admin.register(Gasto)
 class GastoAdmin(admin.ModelAdmin):
-    # 1. Agregamos 'estado' a la lista para ver el desplegable
-    list_display = ('descripcion', 'proveedor', 'fecha_emision', 'monto', 'estado', 'estado_coloreado', 'fecha_vencimiento')
-    
-    # 2. ESTO ES LA MAGIA: Permite editar el estado directamente desde la lista
-    list_editable = ('estado',) 
-    
-    list_filter = ('estado', 'categoria', 'fecha_emision', 'proveedor') 
+    list_display = ('descripcion', 'proveedor', 'fecha_emision', 'monto', 'estado_color')
+    list_filter = ('estado', 'categoria', 'fecha_emision')
     search_fields = ('descripcion', 'proveedor__razon_social')
-    date_hierarchy = 'fecha_emision'
+    date_hierarchy = 'fecha_emision' # También organizamos gastos por año
 
-    # 3. ACCIÓN EN LOTE: Para marcar 10 gastos como pagados de un golpe
-    actions = ['marcar_como_pagado']
-
-    def marcar_como_pagado(self, request, queryset):
-        # Actualiza todos los seleccionados a PAGADO
-        filas_actualizadas = queryset.update(estado='PAGADO')
-        # Muestra un mensaje de éxito arriba
-        self.message_user(request, f"{filas_actualizadas} gastos han sido marcados como PAGADOS exitosamente.")
-    
-    marcar_como_pagado.short_description = "✅ Marcar seleccionados como PAGADOS"
-
-    def estado_coloreado(self, obj):
-        if obj.estado == 'PAGADO':
-            return format_html('<span style="color: green; font-weight:bold;">{}</span>', 'LISTO')
-        elif obj.esta_vencido(): 
-            return format_html('<span style="color: red; font-weight:bold; background-color: #ffddd0; padding:3px;">{}</span>', 'VENCIDO')
-        else:
-            return format_html('<span style="color: orange; font-weight:bold;">{}</span>', 'PENDIENTE')
-    
-    estado_coloreado.short_description = "Alerta"
+    def estado_color(self, obj):
+        color = 'green' if obj.estado == 'PAGADO' else 'red'
+        return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.get_estado_display())
+    estado_color.short_description = "Estado"
