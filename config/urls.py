@@ -3,12 +3,13 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 
-# Importamos las vistas (incluyendo el health_check)
+# Importamos las vistas (incluyendo la nueva API)
 from gestion.views import (
     health_check, 
     generar_pdf_guia, 
     dashboard_analiticas, 
-    exportar_reporte_excel
+    exportar_reporte_excel,
+    obtener_info_producto  # <--- NUEVA IMPORTACIÓN
 )
 
 urlpatterns = [
@@ -24,8 +25,10 @@ urlpatterns = [
     path('reporte/excel/', exportar_reporte_excel, name='exportar_excel'),
 
     # 4. RUTA PARA EL "LATIDO DEL CORAZÓN" (CRON JOB)
-    # Esta es la que visitará cron-job.org para despertar al servidor
     path('health/', health_check, name='health_check'),
+
+    # 5. API PARA OBTENER PRECIOS DINÁMICOS (NUEVA RUTA)
+    path('api/producto/<int:producto_id>/', obtener_info_producto, name='api_info_producto'),
 ]
 
 # --- CONFIGURACIÓN PARA IMÁGENES ---
