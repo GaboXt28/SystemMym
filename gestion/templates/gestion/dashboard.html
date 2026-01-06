@@ -1,195 +1,303 @@
 {% extends "admin/base_site.html" %}
+
 {% load static %}
 
+
+
 {% block content %}
+
 <div class="container-fluid">
 
+
+
     <div class="row mb-4">
+
         <div class="col-12">
-            <div class="card shadow-sm border-left-primary">
-                <div class="card-body d-flex justify-content-between align-items-center py-3">
 
-                    <div>
-                        <h4 class="m-0 text-dark font-weight-bold">
-                            <i class="fas fa-chart-pie text-primary mr-2"></i>
-                            Panel Gerencial: {{ anio_seleccionado }}
-                        </h4>
-                        <small class="text-muted">Mostrando registros del año fiscal seleccionado</small>
-                    </div>
+            <div class="card shadow-sm">
 
-                    <form method="get" class="form-inline">
-                        <label class="mr-2 font-weight-bold text-secondary">Cambiar Año:</label>
-                        <select name="anio" class="form-control bg-light border-primary" style="font-weight: bold;"
-                            onchange="this.form.submit()">
+                <div class="card-header bg-primary text-white">
 
-                            {% for anio in anios_disponibles %}
-                            <option value="{{ anio }}" {% if anio == anio_seleccionado %}selected{% endif %}>
-                                {{ anio }}
-                            </option>
-                            {% endfor %}
+                    <h3 class="card-title m-0"><i class="fas fa-chart-line"></i> Dashboard Gerencial</h3>
 
-                        </select>
+                </div>
+
+                <div class="card-body">
+
+                    <form method="get" class="row align-items-end">
+
+                        <div class="col-md-3">
+
+                            <label class="font-weight-bold">Desde:</label>
+
+                            <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio }}">
+
+                        </div>
+
+
+
+                        <div class="col-md-3">
+
+                            <label class="font-weight-bold">Hasta:</label>
+
+                            <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin }}">
+
+                        </div>
+
+
+
+                        <div class="col-md-2">
+
+                            <button type="submit" class="btn btn-info btn-block">
+
+                                <i class="fas fa-filter"></i> Filtrar
+
+                            </button>
+
+                        </div>
+
+
+
+                        <div class="col-md-2">
+
+                            <button type="submit" formaction="{% url 'exportar_excel' %}"
+
+                                class="btn btn-success btn-block">
+
+                                <i class="fas fa-file-excel"></i> Excel
+
+                            </button>
+
+                        </div>
+
+
+
+                        <div class="col-md-2 text-right">
+
+                            <small class="text-muted">Rango actual</small>
+
+                        </div>
+
                     </form>
 
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
+
+
     <div class="row">
+
         <div class="col-lg-3 col-6">
+
             <div class="small-box bg-info">
+
                 <div class="inner">
+
                     <h3>S/. {{ total_ventas|floatformat:2 }}</h3>
-                    <p>Ventas del Año</p>
+
+                    <p>Ventas Totales</p>
+
                 </div>
+
                 <div class="icon"><i class="fas fa-shopping-cart"></i></div>
+
             </div>
+
         </div>
+
         <div class="col-lg-3 col-6">
+
             <div class="small-box bg-danger">
+
                 <div class="inner">
+
                     <h3>S/. {{ total_gastos|floatformat:2 }}</h3>
+
                     <p>Gastos & Compras</p>
+
                 </div>
+
                 <div class="icon"><i class="fas fa-file-invoice-dollar"></i></div>
+
             </div>
+
         </div>
+
         <div class="col-lg-3 col-6">
+
             <div class="small-box bg-success">
+
                 <div class="inner">
+
                     <h3>S/. {{ ganancia_neta|floatformat:2 }}</h3>
-                    <p>Utilidad Neta</p>
+
+                    <p>Utilidad / Ganancia</p>
+
                 </div>
+
                 <div class="icon"><i class="fas fa-chart-line"></i></div>
+
             </div>
+
         </div>
+
         <div class="col-lg-3 col-6">
+
             <div class="small-box bg-warning">
+
                 <div class="inner">
+
                     <h3>S/. {{ deuda_calle|floatformat:2 }}</h3>
-                    <p>Por Cobrar (Total)</p>
+
+                    <p>Clientes me Deben (Total)</p>
+
                 </div>
+
                 <div class="icon"><i class="fas fa-hand-holding-usd"></i></div>
+
             </div>
+
         </div>
+
     </div>
+
+
 
     <div class="row">
 
-        <div class="col-lg-8">
+
+
+        <div class="col-md-6">
+
             <div class="card card-primary card-outline">
-                <div class="card-header border-0">
-                    <h3 class="card-title font-weight-bold">📄 Últimas Guías Emitidas ({{ anio_seleccionado }})</h3>
-                </div>
-                <div class="card-body table-responsive p-0">
-                    <table class="table table-striped table-valign-middle">
-                        <thead>
-                            <tr>
-                                <th>Guía N°</th>
-                                <th>Cliente</th>
-                                <th>Fecha</th>
-                                <th>Total</th>
-                                <th class="text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for venta in ultimas_ventas %}
-                            <tr>
-                                <td class="font-weight-bold text-primary">{{ venta.numero_guia }}</td>
-                                <td>{{ venta.cliente.nombre_contacto }}</td>
-                                <td>{{ venta.fecha_emision|date:"d/m/Y" }}</td>
-                                <td class="text-success font-weight-bold">S/. {{ venta.total_venta }}</td>
-                                <td class="text-right">
-                                    <a href="{% url 'imprimir_guia' venta.id %}?ver=true" target="_blank"
-                                        class="btn btn-info btn-sm" title="Ver en Pantalla">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
 
-                                    <a href="{% url 'imprimir_guia' venta.id %}" class="btn btn-secondary btn-sm"
-                                        title="Descargar PDF">
-                                        <i class="fas fa-download"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
-                                    No hay guías registradas en el año {{ anio_seleccionado }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-
-            <div class="card card-secondary card-outline">
                 <div class="card-header">
-                    <h3 class="card-title">Balance Anual</h3>
+
+                    <h3 class="card-title">Balance: Ingresos vs Gastos</h3>
+
                 </div>
+
                 <div class="card-body">
+
                     <canvas id="balanceChart"
-                        style="min-height: 200px; height: 200px; max-height: 200px; max-width: 100%;"></canvas>
+
+                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+
                 </div>
+
             </div>
 
-            <div class="card card-danger card-outline mt-3">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-exclamation-triangle text-danger mr-1"></i> Stock Bajo
-                    </h3>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Producto</th>
-                                <th style="width: 40px">Stock</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for prod in productos_bajo_stock %}
-                            <tr>
-                                <td>{{ prod.nombre }}</td>
-                                <td><span class="badge bg-danger">{{ prod.stock_actual }}</span></td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="2" class="text-center text-success py-3">✅ Todo OK</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
+
+
+
+        <div class="col-md-6">
+
+            <div class="card card-danger card-outline">
+
+                <div class="card-header">
+
+                    <h3 class="card-title"><i class="fas fa-exclamation-triangle"></i> 🚨 Alerta: Stock Bajo (Menos de
+
+                        10)</h3>
+
+                </div>
+
+                <div class="card-body p-0">
+
+                    <table class="table table-striped">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Producto</th>
+
+                                <th style="width: 40px">Stock</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for prod in productos_bajo_stock %}
+
+                            <tr>
+
+                                <td>{{ prod.nombre }}</td>
+
+                                <td><span class="badge bg-danger" style="font-size:1em;">{{ prod.stock_actual }}</span>
+
+                                </td>
+
+                            </tr>
+
+                            {% empty %}
+
+                            <tr>
+
+                                <td colspan="2" class="text-center text-success">✅ Inventario Saludable</td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
+
 </div>
 
+
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+
     var ctx = document.getElementById('balanceChart').getContext('2d');
+
     var myChart = new Chart(ctx, {
+
         type: 'doughnut',
+
         data: {
-            labels: ['Ventas', 'Gastos'],
+
+            labels: ['Ventas (Ingresos)', 'Gastos (Egresos)'],
+
             datasets: [{
+
                 data: [{{ total_ventas }}, {{ total_gastos }}],
+
         backgroundColor: ['#17a2b8', '#dc3545'],
-        borderWidth: 1
+
     }]
+
         },
+
     options: {
+
         responsive: true,
+
             maintainAspectRatio: false,
-                legend: {
-            position: 'bottom'
+
         }
-    }
+
     });
+
 </script>
+
 {% endblock %}
