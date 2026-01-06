@@ -50,7 +50,29 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
     autocomplete_fields = ['cliente']
     ordering = ('-fecha_emision', '-numero_guia')
 
- # --- VERSIÓN CORREGIDA PARA QUE EL BOTÓN "TODAS" FUNCIONE ---
+    # --- NUEVO: PRE-LLENAR EL FORMULARIO CON EL SIGUIENTE NÚMERO ---
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        
+        # 1. Obtenemos el año actual
+        anio_actual = timezone.now().year
+        
+        # 2. Buscamos la última guía de ESTE año
+        ultima_guia = GuiaEntrega.objects.filter(
+            fecha_emision__year=anio_actual
+        ).order_by('numero_guia').last()
+
+        # 3. Calculamos el siguiente
+        if ultima_guia and ultima_guia.numero_guia.isdigit():
+            siguiente = int(ultima_guia.numero_guia) + 1
+            initial['numero_guia'] = str(siguiente).zfill(6) # Rellena con ceros: 000005
+        else:
+            initial['numero_guia'] = '000001' # Si es la primera del año
+            
+        return initial
+    # -------------------------------------------------------------
+
+    # --- VERSIÓN CORREGIDA PARA QUE EL BOTÓN "TODAS" FUNCIONE ---
     def changelist_view(self, request, extra_context=None):
         # 1. Obtenemos de dónde viene el usuario (Referer)
         referer = request.META.get('HTTP_REFERER', '')
