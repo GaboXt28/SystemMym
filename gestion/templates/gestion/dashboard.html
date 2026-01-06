@@ -23,7 +23,7 @@
                             onchange="this.form.submit()">
 
                             {% for anio in anios_disponibles %}
-                            <option value="{{ anio }}" {% if anio==anio_seleccionado %}selected{% endif %}>
+                            <option value="{{ anio }}" {% if anio == anio_seleccionado %}selected{% endif %}>
                                 {{ anio }}
                             </option>
                             {% endfor %}
