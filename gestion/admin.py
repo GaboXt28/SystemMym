@@ -105,14 +105,16 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
         return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.get_estado_pago_display())
     estado_pago_color.short_description = "Estado Pago"
 
+    # --- AQUÍ ESTÁ EL CAMBIO PARA EL MODAL ---
     def acciones_pdf(self, obj):
         try:
             url_descargar = reverse('imprimir_guia', args=[obj.id])
-            url_ver = f"{url_descargar}?ver=true"
+            
             return format_html(
-                '<a class="button" href="{}" target="_blank" style="background-color:#17a2b8; color:white; padding:3px 8px; border-radius:3px;">👁️ Ver</a>&nbsp;'
+                # Agregamos la clase 'ver-pdf-modal' y quitamos target="_blank"
+                '<a class="button ver-pdf-modal" href="{}" style="cursor:pointer; background-color:#17a2b8; color:white; padding:3px 8px; border-radius:3px;">👁️ Ver</a>&nbsp;'
                 '<a class="button" href="{}" style="background-color:#6c757d; color:white; padding:3px 8px; border-radius:3px;">📥 PDF</a>',
-                url_ver, url_descargar
+                url_descargar, url_descargar
             )
         except: return "-"
     acciones_pdf.short_description = "Documentos"
