@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
-from django.utils import timezone # <--- IMPORTANTE
-from django.http import HttpResponseRedirect # <--- IMPORTANTE
+from django.utils import timezone 
+from django.http import HttpResponseRedirect 
 from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto
 
 # --- 1. CONFIGURACIÓN DE PRODUCTOS ---
@@ -50,6 +50,11 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
     autocomplete_fields = ['cliente']
     ordering = ('-fecha_emision', '-numero_guia')
 
+    # --- IMPORTANTE: CARGAMOS EL JAVASCRIPT AQUÍ ---
+    class Media:
+        js = ('gestion/js/custom_admin.js',)
+    # -----------------------------------------------
+
     # --- NUEVO: PRE-LLENAR EL FORMULARIO CON EL SIGUIENTE NÚMERO ---
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
@@ -65,26 +70,16 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
         # 3. Calculamos el siguiente
         if ultima_guia and ultima_guia.numero_guia.isdigit():
             siguiente = int(ultima_guia.numero_guia) + 1
-            initial['numero_guia'] = str(siguiente).zfill(6) # Rellena con ceros: 000005
+            initial['numero_guia'] = str(siguiente).zfill(6) 
         else:
-            initial['numero_guia'] = '000001' # Si es la primera del año
+            initial['numero_guia'] = '000001' 
             
         return initial
-    # -------------------------------------------------------------
 
     # --- VERSIÓN CORREGIDA PARA QUE EL BOTÓN "TODAS" FUNCIONE ---
     def changelist_view(self, request, extra_context=None):
-        # 1. Obtenemos de dónde viene el usuario (Referer)
         referer = request.META.get('HTTP_REFERER', '')
-        
-        # 2. Obtenemos la ruta actual (ej: /admin/gestion/guiaentrega/)
         path_actual = request.path
-        
-        # LÓGICA INTELIGENTE:
-        # Solo forzamos el 2026 si NO hay filtros (request.GET vacío)
-        # Y ADEMÁS el usuario viene de "afuera" (el referer no contiene la ruta actual).
-        # Si el usuario ya estaba aquí y dio clic a "Todas", el referer tendrá la ruta actual, 
-        # así que no entraremos al if y le dejaremos ver todo.
         
         if not request.GET and path_actual not in referer:
             anio_actual = timezone.now().year
@@ -93,7 +88,6 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
             return HttpResponseRedirect(f"{request.path}?{q.urlencode()}")
         
         return super().changelist_view(request, extra_context)
-    # ------------------------------------------------
 
     def numero_guia_visual(self, obj):
         return format_html('<b style="color: #2c3e50;">#{}</b>', obj.numero_guia)
@@ -105,16 +99,19 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
         return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.get_estado_pago_display())
     estado_pago_color.short_description = "Estado Pago"
 
-    # --- AQUÍ ESTÁ EL CAMBIO PARA EL MODAL ---
+    # --- MODIFICADO PARA MODAL ---
     def acciones_pdf(self, obj):
         try:
-            url_descargar = reverse('imprimir_guia', args=[obj.id])
+            url_base = reverse('imprimir_guia', args=[obj.id])
+            
+            # Agregamos ?ver=true para que la vista sepa que debe ser INLINE (Modal)
+            url_ver = f"{url_base}?ver=true"
             
             return format_html(
-                # Agregamos la clase 'ver-pdf-modal' y quitamos target="_blank"
+                # El primer botón usa url_ver (Modal), el segundo usa url_base (Descarga directa)
                 '<a class="button ver-pdf-modal" href="{}" style="cursor:pointer; background-color:#17a2b8; color:white; padding:3px 8px; border-radius:3px;">👁️ Ver</a>&nbsp;'
                 '<a class="button" href="{}" style="background-color:#6c757d; color:white; padding:3px 8px; border-radius:3px;">📥 PDF</a>',
-                url_descargar, url_descargar
+                url_ver, url_base
             )
         except: return "-"
     acciones_pdf.short_description = "Documentos"
