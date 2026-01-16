@@ -42,58 +42,41 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
     list_display = ('numero_guia_visual', 'cliente', 'fecha_emision', 'total_venta', 'estado_pago_color', 'acciones_pdf')
     list_filter = ('estado_pago', 'fecha_emision') 
     search_fields = ('numero_guia', 'cliente__nombre_contacto', 'cliente__nombre_empresa')
+    
+    # Navegación por Años
     date_hierarchy = 'fecha_emision' 
     
     inlines = [DetalleGuiaInline, PagoInline]
     autocomplete_fields = ['cliente']
     ordering = ('-fecha_emision', '-numero_guia')
 
-    # --- CAMBIO: HACEMOS VISIBLES LOS TOTALES ---
-    readonly_fields = ('total_venta', 'monto_cobrado')
-
-    # ORGANIZAMOS EL FORMULARIO PARA QUE SE VEA ORDENADO
-    fieldsets = (
-        ('Información Principal', {
-            'fields': ('cliente', 'asesor', 'numero_guia', 'fecha_emision')
-        }),
-        ('Detalles de Entrega', {
-            'fields': ('direccion_entrega', 'observaciones')
-        }),
-        ('Totales y Estado', {
-            'fields': ('total_venta', 'estado_pago', 'monto_cobrado')
-        }),
-    )
-
     # --- IMPORTANTE: CARGAMOS EL JAVASCRIPT AQUÍ ---
     class Media:
         js = ('gestion/js/custom_admin.js',)
     # -----------------------------------------------
 
-    # --- LÓGICA DE CORRELATIVO ---
+    # --- NUEVO: PRE-LLENAR EL FORMULARIO CON EL SIGUIENTE NÚMERO ---
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
         
-        # Solo calculamos si estamos añadiendo (add) una nueva guía
-        if 'add' in request.path:
-            anio_actual = timezone.now().year
-            
-            # Buscamos la última guía de ESTE año
-            ultima_guia = GuiaEntrega.objects.filter(
-                fecha_emision__year=anio_actual
-            ).order_by('numero_guia').last()
+        # 1. Obtenemos el año actual
+        anio_actual = timezone.now().year
+        
+        # 2. Buscamos la última guía de ESTE año
+        ultima_guia = GuiaEntrega.objects.filter(
+            fecha_emision__year=anio_actual
+        ).order_by('numero_guia').last()
 
-            # Calculamos el siguiente
-            if ultima_guia and ultima_guia.numero_guia.isdigit():
-                try:
-                    siguiente = int(ultima_guia.numero_guia) + 1
-                    initial['numero_guia'] = str(siguiente).zfill(6) 
-                except:
-                    initial['numero_guia'] = '000001'
-            else:
-                initial['numero_guia'] = '000001' 
+        # 3. Calculamos el siguiente
+        if ultima_guia and ultima_guia.numero_guia.isdigit():
+            siguiente = int(ultima_guia.numero_guia) + 1
+            initial['numero_guia'] = str(siguiente).zfill(6) 
+        else:
+            initial['numero_guia'] = '000001' 
             
         return initial
 
+    # --- VERSIÓN CORREGIDA PARA QUE EL BOTÓN "TODAS" FUNCIONE ---
     def changelist_view(self, request, extra_context=None):
         referer = request.META.get('HTTP_REFERER', '')
         path_actual = request.path
@@ -116,11 +99,16 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
         return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.get_estado_pago_display())
     estado_pago_color.short_description = "Estado Pago"
 
+    # --- MODIFICADO PARA MODAL ---
     def acciones_pdf(self, obj):
         try:
             url_base = reverse('imprimir_guia', args=[obj.id])
+            
+            # Agregamos ?ver=true para que la vista sepa que debe ser INLINE (Modal)
             url_ver = f"{url_base}?ver=true"
+            
             return format_html(
+                # El primer botón usa url_ver (Modal), el segundo usa url_base (Descarga directa)
                 '<a class="button ver-pdf-modal" href="{}" style="cursor:pointer; background-color:#17a2b8; color:white; padding:3px 8px; border-radius:3px;">👁️ Ver</a>&nbsp;'
                 '<a class="button" href="{}" style="background-color:#6c757d; color:white; padding:3px 8px; border-radius:3px;">📥 PDF</a>',
                 url_ver, url_base
