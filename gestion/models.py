@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from datetime import date
+from datetime import date, datetime # <--- OJO: Importamos datetime también
 
 # 1. CATALOGO DE PRODUCTOS
 class Producto(models.Model):
@@ -28,7 +28,7 @@ class GuiaEntrega(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)
     asesor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     
-    # --- CAMBIO: Se quitó unique=True para permitir repetir números en años distintos ---
+    # Sin unique=True para permitir repetir números en años distintos
     numero_guia = models.CharField(max_length=20) 
     
     fecha_emision = models.DateField(default=timezone.now)
@@ -63,8 +63,6 @@ class GuiaEntrega(models.Model):
         # Lógica de autonumeración por año
         if not self.pk and not self.numero_guia:
             anio_actual = self.fecha_emision.year
-            
-            # Buscamos la última guía SOLO de este año para seguir la secuencia
             ultima = GuiaEntrega.objects.filter(
                 fecha_emision__year=anio_actual
             ).order_by('numero_guia').last()
@@ -78,7 +76,6 @@ class GuiaEntrega(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        # --- CAMBIO: Mostramos el año para identificar la guía fácilmente ---
         return f"Guía #{self.numero_guia} ({self.fecha_emision.year}) - {self.cliente}"
     
     class Meta:
@@ -183,3 +180,28 @@ class Gasto(models.Model):
 
     def __str__(self):
         return f"{self.descripcion} - S/. {self.monto}"
+
+# --- NUEVO: CONTROL DE ASISTENCIA (ESTO ES LO QUE FALTABA) ---
+class Asistencia(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Colaborador")
+    fecha = models.DateField(default=timezone.now)
+    hora_entrada = models.TimeField(blank=True, null=True)
+    hora_salida = models.TimeField(blank=True, null=True)
+    
+    def horas_trabajadas(self):
+        if self.hora_entrada and self.hora_salida:
+            # Calculo básico de horas
+            entrada = datetime.combine(date.today(), self.hora_entrada)
+            salida = datetime.combine(date.today(), self.hora_salida)
+            diferencia = salida - entrada
+            total_segundos = diferencia.total_seconds()
+            horas = total_segundos / 3600
+            return round(horas, 2)
+        return 0.00
+    
+    def __str__(self):
+        return f"{self.usuario.username} - {self.fecha}"
+
+    class Meta:
+        verbose_name = "Registro de Asistencia"
+        verbose_name_plural = "Control de Asistencias"

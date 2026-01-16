@@ -1,6 +1,6 @@
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect # <--- IMPORTANTE: redirect añadido
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
 from django.db.models import Sum
@@ -11,7 +11,7 @@ from .models import GuiaEntrega, Producto, Gasto, Cliente
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 
-# --- VISTA 1: GENERADOR DE PDF (CORREGIDO PARA MODAL) ---
+# --- VISTA 1: GENERADOR DE PDF ---
 def generar_pdf_guia(request, guia_id):
     guia = get_object_or_404(GuiaEntrega, pk=guia_id)
     detalles = guia.detalles.all()
@@ -26,16 +26,13 @@ def generar_pdf_guia(request, guia_id):
     template_path = 'gestion/guia_pdf.html'
     response = HttpResponse(content_type='application/pdf')
     
-    # --- CAMBIO AQUÍ: Lógica para ver en modal vs descargar ---
-    # Si la URL tiene ?ver=true, el navegador lo muestra (inline).
-    # Si no, lo fuerza a descargar (attachment).
+    # Lógica para ver en modal (inline) vs descargar (attachment)
     if request.GET.get('ver') == 'true':
         disposition = 'inline'
     else:
         disposition = 'attachment'
 
     response['Content-Disposition'] = f'{disposition}; filename="Guia-{guia.numero_guia}.pdf"'
-    # ----------------------------------------------------------
     
     template = get_template(template_path)
     html = template.render(context)
@@ -46,9 +43,15 @@ def generar_pdf_guia(request, guia_id):
         return HttpResponse('Tuvimos errores <pre>' + html + '</pre>')
     return response
 
-# --- VISTA 2: DASHBOARD GERENCIAL (PROTEGIDO) ---
+# --- VISTA 2: DASHBOARD GERENCIAL (PROTEGIDO 🔒) ---
 @login_required(login_url='/adminconfiguracion/login/')
 def dashboard_analiticas(request):
+    
+    # ⛔ SEGURIDAD: Si el usuario NO es el jefe (superuser),
+    # lo expulsamos del dashboard y lo mandamos al menú principal.
+    if not request.user.is_superuser:
+        return redirect('/adminconfiguracion/') 
+    
     # 1. Definir fechas
     hoy = timezone.now().date()
     inicio_mes = hoy.replace(day=1)
@@ -91,9 +94,14 @@ def dashboard_analiticas(request):
     
     return render(request, 'gestion/dashboard.html', context)
 
-# --- VISTA 3: EXPORTAR EXCEL (REPORTES) ---
+# --- VISTA 3: EXPORTAR EXCEL (PROTEGIDO 🔒) ---
 @login_required(login_url='/adminconfiguracion/login/')
 def exportar_reporte_excel(request):
+    
+    # ⛔ SEGURIDAD: Los colaboradores tampoco pueden bajar la base de datos
+    if not request.user.is_superuser:
+        return redirect('/adminconfiguracion/')
+
     # 1. Obtener filtros
     hoy = timezone.now().date()
     inicio_mes = hoy.replace(day=1)
@@ -179,7 +187,7 @@ def exportar_reporte_excel(request):
 def health_check(request):
     return HttpResponse("OK")
 
-# --- VISTA 5: API PARA PRECIOS (PRODUCTOS) ---
+# --- VISTA 5: API PARA PRECIOS (NECESARIA PARA ADMIN) ---
 def obtener_info_producto(request, producto_id):
     from .models import Producto
     try:
@@ -192,8 +200,7 @@ def obtener_info_producto(request, producto_id):
     except Producto.DoesNotExist:
         return JsonResponse({'error': 'Producto no encontrado'}, status=404)
 
-# --- VISTA 6: API PARA DIRECCIÓN (CLIENTES) ---
-# (Esta faltaba en tu código, la agregué de vuelta para que funcione el JS)
+# --- VISTA 6: API PARA DIRECCIÓN (NECESARIA PARA ADMIN) ---
 def obtener_direccion_cliente(request, cliente_id):
     from .models import Cliente
     try:
