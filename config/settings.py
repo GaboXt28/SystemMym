@@ -1,6 +1,6 @@
 """
 Django settings for config project.
-Updated for Debugging in Production.
+Optimized for SystemMyM - Production.
 """
 import os
 import dj_database_url
@@ -12,15 +12,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-nae_=9++)5)-(_!6me6c_!^5ot_aj@r^vjkmpdt1=l0ovn*wz6')
 
-# --- CAMBIO 1: ACTIVAR DEBUG SIEMPRE (TEMPORAL) ---
-# Esto nos mostrará el error real en pantalla en lugar del Error 500.
-# Cuando arreglemos el problema, volveremos a ponerlo en False.
-DEBUG = True 
+# --- SEGURIDAD: MODO PRODUCCIÓN ---
+# Lo ponemos en False para seguridad. Solo cámbialo a True si hay un error grave que necesitas investigar.
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-# --- CAMBIO 2: ORIGENES DE CONFIANZA ---
-# Necesario para que Django te deje loguearte en https
+# --- ORIGENES DE CONFIANZA (HTTPS) ---
 CSRF_TRUSTED_ORIGINS = [
     'https://systemmym.onrender.com',
 ]
@@ -84,9 +82,9 @@ AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-# --- INTERNACIONALIZACIÓN ---
+# --- INTERNACIONALIZACIÓN (PERÚ) ---
 LANGUAGE_CODE = 'es-pe'  
-TIME_ZONE = 'America/Lima' 
+TIME_ZONE = 'America/Lima'   # <--- HORA PERUANA CONFIRMADA
 USE_I18N = True
 USE_TZ = True
 
@@ -98,8 +96,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- CAMBIO 3: SISTEMA DE LOGS PARA RENDER ---
-# Esto obliga a Django a imprimir los errores en la consola de Render
+# --- SISTEMA DE LOGS (PARA VER ERRORES EN RENDER) ---
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -112,16 +109,9 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'INFO',
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
 }
 
-# --- CONFIGURACIÓN DE JAZZMIN ---
+# --- CONFIGURACIÓN DE JAZZMIN (PANEL ADMIN) ---
 JAZZMIN_SETTINGS = {
     "site_title": "Admin MyM",
     "site_header": "Sistema MyM",
@@ -129,13 +119,16 @@ JAZZMIN_SETTINGS = {
     "welcome_sign": "Bienvenido al ERP",
     "search_model": ["gestion.Cliente", "gestion.GuiaEntrega"],
 
+    # Menú superior
     "topmenu_links": [
-        {"name": "🏠 Inicio (Dashboard)",  "url": "home", "permissions": ["auth.view_user"]},
-        {"name": "⚙️ Configurar Tablas", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "🏠 Dashboard",  "url": "home", "permissions": ["auth.view_user"]}, # Solo Admin ve esto gracias a views.py
+        {"name": "⚙️ Panel Admin", "url": "admin:index", "permissions": ["auth.view_user"]},
     ],
 
     "show_sidebar": True,
     "navigation_expanded": True,
+    
+    # --- ICONOS DEL MENÚ LATERAL ---
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -145,14 +138,19 @@ JAZZMIN_SETTINGS = {
         "gestion.Pago": "fas fa-hand-holding-usd",
         "gestion.Proveedor": "fas fa-truck",
         "gestion.Gasto": "fas fa-money-bill-wave",
+        "gestion.Asistencia": "fas fa-clock", # <--- NUEVO ICONO PARA ASISTENCIA
     },
+    
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
     "show_ui_builder": False,
     "changeform_format": "horizontal_tabs",
+    
+    # Enlazamos tu JS personalizado
     "custom_js": "gestion/js/custom_admin.js",
 }
 
+# Redirección al login
 LOGIN_REDIRECT_URL = 'home' 
 LOGOUT_REDIRECT_URL = '/adminconfiguracion/login/'
 
