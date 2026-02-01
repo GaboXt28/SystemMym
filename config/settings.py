@@ -13,8 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-nae_=9++)5)-(_!6me6c_!^5ot_aj@r^vjkmpdt1=l0ovn*wz6')
 
 # --- SEGURIDAD: MODO PRODUCCIÓN ---
-# Lo ponemos en False para seguridad. Solo cámbialo a True si hay un error grave que necesitas investigar.
-DEBUG = True
+# Lo ponemos en False para seguridad. Ya aplicamos el parche, así que el error debería desaparecer.
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -138,7 +138,7 @@ JAZZMIN_SETTINGS = {
         "gestion.Pago": "fas fa-hand-holding-usd",
         "gestion.Proveedor": "fas fa-truck",
         "gestion.Gasto": "fas fa-money-bill-wave",
-        "gestion.Asistencia": "fas fa-clock", # <--- NUEVO ICONO PARA ASISTENCIA
+        "gestion.Asistencia": "fas fa-clock", 
     },
     
     "default_icon_parents": "fas fa-chevron-circle-right",
@@ -158,3 +158,23 @@ JAZZMIN_UI_TWEAKS = {
     "theme": "flatly",
     "navbar": "navbar-dark",
 }
+
+# ==============================================================================
+# 🚑 PARCHE DE EMERGENCIA: SOLUCIÓN ERROR 500 (Jazzmin + Django 5.0)
+# ==============================================================================
+# Este código intercepta el error de la paginación y lo corrige automáticamente.
+# No borres esto hasta que Jazzmin saque una actualización oficial.
+from django.utils import html
+original_format_html = html.format_html
+
+def patched_format_html(format_string, *args, **kwargs):
+    # Si Jazzmin llama a la función sin argumentos (el error que te salía),
+    # usamos mark_safe para que no explote.
+    if not args and not kwargs:
+        return html.mark_safe(format_string)
+    # Si es una llamada normal, dejamos que Django haga su trabajo.
+    return original_format_html(format_string, *args, **kwargs)
+
+# Aplicamos el parche al sistema
+html.format_html = patched_format_html
+# ==============================================================================
