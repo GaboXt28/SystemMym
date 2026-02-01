@@ -9,13 +9,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const links = document.querySelectorAll('.nav-sidebar .nav-link');
     for (let link of links) {
         if (link.textContent.trim() === "Dashboard") {
-            link.href = "/home/"; // Ajustado a tu URL real 'home'
+            link.href = "/home/"; // Ajustado a tu URL real definida en urls.py
             link.innerHTML = `
                 <i class="nav-icon fas fa-chart-pie text-warning"></i>
                 <p>Dashboard Gerencial</p>
             `;
             // Marcar activo si estamos en el dashboard
-            if (window.location.pathname.includes("/home/")) {
+            if (window.location.pathname.includes("/home/") || window.location.pathname === "/") {
                 link.classList.add("active");
             }
             break;
@@ -28,26 +28,31 @@ document.addEventListener("DOMContentLoaded", function () {
     
     // --- Referencias a campos principales ---
     const selectCliente = $('#id_cliente');
-    const inputDireccion = $('#id_direccion_entrega'); // Asegúrate que este ID coincida con tu HTML
+    const inputDireccion = $('#id_direccion_entrega');
     const inputTotalVenta = $('#id_total_venta');
+
+    // Bloquear el campo total para que sea solo lectura (visual)
+    if (inputTotalVenta.length) {
+        inputTotalVenta.attr('readonly', true).css('background-color', '#f4f6f9');
+    }
 
     // --- A. AUTO-COMPLETAR DIRECCIÓN DEL CLIENTE ---
     if (selectCliente.length > 0) {
         selectCliente.on('change', function() {
             let clienteId = $(this).val();
             if (clienteId) {
-                // Usamos la ruta relativa a tu admin
+                // NOTA: Usamos la ruta /api/ definida en urls.py
                 $.ajax({
-                    url: `/adminconfiguracion/gestion/api/cliente/${clienteId}/`, 
+                    url: `/api/cliente/${clienteId}/`, 
                     type: 'GET',
                     success: function(data) {
                         if (data.direccion) {
-                            // Rellenamos el campo, pero el usuario puede editarlo después
+                            // Rellenamos el campo si está vacío o si el usuario cambia de cliente
                             inputDireccion.val(data.direccion);
                         }
                     },
-                    error: function() {
-                        console.log("No se pudo obtener la dirección (Verificar URL en urls.py)");
+                    error: function(xhr) {
+                        console.error("Error obteniendo cliente:", xhr.status);
                     }
                 });
             }
@@ -59,7 +64,6 @@ document.addEventListener("DOMContentLoaded", function () {
         let totalAcumulado = 0;
 
         // Recorremos todas las filas visibles de detalles (productos)
-        // Nota: Django usa clases dynamic-form o similares. Ajustamos el selector:
         $('.dynamic-detalleguia_set').each(function() {
             const fila = $(this);
             
@@ -68,25 +72,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 return; 
             }
 
-            // Buscamos los inputs de Cantidad y Precio dentro de la fila
-            let inputCantidad = fila.find('input[name$="-cantidad"]');
+            const inputCantidad = fila.find('input[name$="-cantidad"]');
+            const selectProducto = fila.find('select[name$="-producto"]');
             
-            // Intentamos buscar el precio. Puede estar en un input visible o ser traído
-            // Si tienes un campo 'precio_unitario' en el detalle:
-            let inputPrecio = fila.find('input[name$="-precio_unitario"]'); 
-            
-            // Si no existe input de precio (porque es readonly), buscamos el select del producto
-            // y usamos el atributo 'data-precio' que guardaremos ahí.
-            let selectProducto = fila.find('select[name$="-producto"]');
-            
+            // Obtenemos los valores. El precio viene del atributo 'data-precio' que inyectamos vía AJAX
             let cantidad = parseFloat(inputCantidad.val()) || 0;
-            let precio = 0;
-
-            if (inputPrecio.length > 0) {
-                precio = parseFloat(inputPrecio.val()) || 0;
-            } else {
-                precio = parseFloat(selectProducto.attr('data-precio')) || 0;
-            }
+            let precio = parseFloat(selectProducto.attr('data-precio')) || 0;
 
             // Sumamos al total
             totalAcumulado += (cantidad * precio);
@@ -102,25 +93,20 @@ document.addEventListener("DOMContentLoaded", function () {
     function conectarEventosFila(fila) {
         let selectProducto = fila.find('select[name$="-producto"]');
         let inputCantidad = fila.find('input[name$="-cantidad"]');
+        let deleteBox = fila.find('input[name$="-DELETE"]');
         
-        // 1. Cuando cambia el producto -> Traer Precio
+        // 1. Cuando cambia el producto -> Traer Precio de la API
         selectProducto.on('change', function() {
             let productoId = $(this).val();
             if (productoId) {
                 $.ajax({
-                    url: `/adminconfiguracion/gestion/api/producto/${productoId}/`,
+                    url: `/api/producto/${productoId}/`,
                     success: function(data) {
                         let precio = data.precio || 0;
                         
                         // Guardamos el precio en el elemento select para cálculos rápidos
                         selectProducto.attr('data-precio', precio);
                         
-                        // Si tienes un campo visible de precio unitario, lo llenamos también
-                        let inputPrecioVisible = fila.find('input[name$="-precio_unitario"]');
-                        if (inputPrecioVisible.length) {
-                            inputPrecioVisible.val(precio);
-                        }
-
                         // Recalculamos el total general
                         calcularTotalGeneral();
                     }
@@ -137,33 +123,32 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         
         // 3. Si borran la fila -> Recalcular Total
-        fila.find('input[name$="-DELETE"]').on('change', function() {
+        deleteBox.on('change', function() {
             calcularTotalGeneral();
         });
+
+        // 4. Inicialización para filas existentes (Edición)
+        // Si ya hay un producto seleccionado, forzamos la carga del precio
+        if (selectProducto.val() && !selectProducto.attr('data-precio')) {
+            selectProducto.trigger('change');
+        }
     }
 
     // --- D. INICIALIZACIÓN ---
     
-    // 1. Conectar eventos a filas existentes al cargar
+    // 1. Conectar eventos a filas existentes al cargar la página
     $('.dynamic-detalleguia_set').each(function() {
-        const fila = $(this);
-        conectarEventosFila(fila);
-        
-        // Disparar change si ya hay producto seleccionado (para cargar precio inicial)
-        let select = fila.find('select[name$="-producto"]');
-        if (select.val()) {
-            select.trigger('change');
-        }
+        conectarEventosFila($(this));
     });
 
-    // 2. Conectar eventos a nuevas filas (Django Admin dynamic forms)
+    // 2. Conectar eventos a nuevas filas cuando se presiona "Agregar otro"
     $(document).on('formset:added', function(event, $row, formsetName) {
         conectarEventosFila($row);
     });
 
 
     // =======================================================
-    // 3. VENTANA FLOTANTE (MODAL) PARA VER PDF (Mantenido)
+    // 3. VENTANA FLOTANTE (MODAL) PARA VER PDF
     // =======================================================
     const modalHTML = `
     <div id="modalPDF" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; overflow:hidden; background-color:rgba(0,0,0,0.6); backdrop-filter: blur(2px);">
@@ -184,6 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const iframe = document.getElementById("iframePDF");
     const spanCerrar = document.getElementById("cerrarModal");
 
+    // Delegación de eventos para botones dinámicos
     $('body').on('click', '.ver-pdf-modal', function(e) {
         e.preventDefault();
         let urlPDF = $(this).attr('href');

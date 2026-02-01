@@ -268,6 +268,7 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
     ordering = ('-fecha_emision', '-numero_guia')
 
     # --- 1. CARGA DEL JAVASCRIPT ---
+    # ESTA LÍNEA ES LA CLAVE PARA QUE FUNCIONE EL CÁLCULO
     class Media:
         js = ('gestion/js/custom_admin.js',)
 

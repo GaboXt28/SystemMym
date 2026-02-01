@@ -1,15 +1,17 @@
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from django.shortcuts import render, get_object_or_404, redirect # <--- IMPORTANTE: redirect añadido
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
 from django.db.models import Sum
 from django.utils import timezone
 from datetime import datetime, timedelta
 from xhtml2pdf import pisa
-from .models import GuiaEntrega, Producto, Gasto, Cliente
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+
+# Importamos los modelos necesarios
+from .models import GuiaEntrega, Producto, Gasto, Cliente
 
 # --- VISTA 1: GENERADOR DE PDF ---
 def generar_pdf_guia(request, guia_id):
@@ -188,46 +190,29 @@ def health_check(request):
     return HttpResponse("OK")
 
 # --- VISTA 5: API PARA PRECIOS (NECESARIA PARA ADMIN) ---
-def obtener_info_producto(request, producto_id):
-    from .models import Producto
+# Unificamos la lógica aquí para evitar duplicados
+def api_info_producto(request, producto_id):
     try:
         producto = Producto.objects.get(pk=producto_id)
+        # Devolvemos precio y stock por si lo necesitas en el futuro
         data = {
-            'precio': producto.precio_unitario,
+            'precio': float(producto.precio_unitario),
             'stock': producto.stock_actual
         }
         return JsonResponse(data)
     except Producto.DoesNotExist:
-        return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+        return JsonResponse({'error': 'Producto no encontrado', 'precio': 0}, status=404)
 
 # --- VISTA 6: API PARA DIRECCIÓN (NECESARIA PARA ADMIN) ---
-def obtener_direccion_cliente(request, cliente_id):
-    from .models import Cliente
-    try:
-        cliente = Cliente.objects.get(pk=cliente_id)
-        return JsonResponse({'direccion': cliente.direccion_principal})
-    except Cliente.DoesNotExist:
-        return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
-# --- AL FINAL DE GESTION/VIEWS.PY ---
-from django.http import JsonResponse
-from .models import Cliente, Producto
-
-# API para obtener dirección del cliente
+# Unificamos la lógica aquí también
 def api_info_cliente(request, cliente_id):
     try:
-        cliente = Cliente.objects.get(id=cliente_id)
-        # Asumimos que tienes un campo 'direccion' o 'ciudad' en Cliente. 
-        # Si tu campo se llama distinto en models.py, cámbialo aquí.
-        # Por ahora combino ciudad y una dirección genérica si no tienes campo dirección específico
-        direccion = getattr(cliente, 'direccion', '') or f"Dirección registrada en {cliente.ciudad}"
+        cliente = Cliente.objects.get(pk=cliente_id)
+        # Intentamos obtener 'direccion_principal', si no 'direccion', si no 'ciudad'
+        direccion = getattr(cliente, 'direccion_principal', getattr(cliente, 'direccion', '')) 
+        if not direccion:
+            direccion = f"Dirección registrada en {cliente.ciudad}"
+            
         return JsonResponse({'direccion': direccion})
     except Cliente.DoesNotExist:
-        return JsonResponse({'direccion': ''})
-
-# API para obtener precio del producto
-def api_info_producto(request, producto_id):
-    try:
-        producto = Producto.objects.get(id=producto_id)
-        return JsonResponse({'precio': float(producto.precio_unitario)})
-    except Producto.DoesNotExist:
-        return JsonResponse({'precio': 0})
+        return JsonResponse({'error': 'Cliente no encontrado', 'direccion': ''}, status=404)

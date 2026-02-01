@@ -3,34 +3,40 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 
-# Importamos las vistas (incluyendo la nueva API)
+# Importamos todas las vistas desde tu aplicación 'gestion'
+# Esto asegura que los nombres coincidan con lo que pusimos en views.py
 from gestion.views import (
-    health_check, 
-    generar_pdf_guia, 
-    dashboard_analiticas, 
+    dashboard_analiticas,
+    generar_pdf_guia,
     exportar_reporte_excel,
-    obtener_info_producto  # <--- NUEVA IMPORTACIÓN
+    health_check,
+    api_info_producto, # <--- La API del producto
+    api_info_cliente   # <--- La API del cliente
 )
 
 urlpatterns = [
-    # 1. ESTO HACE QUE EL PROGRAMA ABRA DIRECTO EN EL DASHBOARD (Home)
+    # 1. PÁGINA DE INICIO (DASHBOARD)
+    # Redirigimos tanto la ruta vacía como 'home/' al dashboard para evitar errores
     path('', dashboard_analiticas, name='home'),
-    
-    # 2. El Panel Administrativo
+    path('home/', dashboard_analiticas, name='home_alias'),
+
+    # 2. PANEL ADMINISTRATIVO
     path('adminconfiguracion/', admin.site.urls),
-    
-    # 3. Rutas auxiliares
+
+    # 3. RUTAS DE REPORTES Y PDF
     path('dashboard/', dashboard_analiticas, name='dashboard_analytics'),
     path('imprimir/guia/<int:guia_id>/', generar_pdf_guia, name='imprimir_guia'),
     path('reporte/excel/', exportar_reporte_excel, name='exportar_excel'),
 
-    # 4. RUTA PARA EL "LATIDO DEL CORAZÓN" (CRON JOB)
+    # 4. SALUD DEL SISTEMA (CRON JOBS)
     path('health/', health_check, name='health_check'),
 
-    # 5. API PARA OBTENER PRECIOS DINÁMICOS (NUEVA RUTA)
-    path('api/producto/<int:producto_id>/', obtener_info_producto, name='api_info_producto'),
+    # 5. APIs PARA EL JAVASCRIPT (EL CEREBRO DEL CÁLCULO)
+    # Estas rutas son las que llama tu archivo custom_admin.js
+    path('api/cliente/<int:cliente_id>/', api_info_cliente, name='api_info_cliente'),
+    path('api/producto/<int:producto_id>/', api_info_producto, name='api_info_producto'),
 ]
 
-# --- CONFIGURACIÓN PARA IMÁGENES ---
+# --- CONFIGURACIÓN PARA IMÁGENES (SOLO EN MODO DEBUG) ---
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
