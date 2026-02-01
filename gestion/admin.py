@@ -3,13 +3,13 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.utils import timezone 
-from django.http import HttpResponseRedirect, HttpResponse # <--- AGREGADO HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse # <--- AGREGADO HttpResponse para recibos
 from django.db.models import Sum
 from datetime import datetime
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 
-# Importamos tus modelos
+# Importamos tus modelos (incluyendo el nuevo PerfilColaborador)
 from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto, Asistencia, PerfilColaborador
 
 # --- 0. CONFIGURACIÓN DE USUARIOS (NÓMINA) ---
@@ -46,7 +46,7 @@ class ProductoAdmin(admin.ModelAdmin):
         return format_html('<span style="color:green; font-weight:bold;">✅ OK ({})</span>', obj.stock_actual)
     alerta_stock.short_description = "Estado Stock"
 
-# --- 2. CONFIGURACIÓN DE ASISTENCIA (CON RECIBO) ---
+# --- 2. CONFIGURACIÓN DE ASISTENCIA (CON RECIBO SEGURO) ---
 
 # --- FUNCIÓN GENERADORA DE RECIBOS ---
 @admin.action(description="📄 Generar Recibo de Pago (Días seleccionados)")
@@ -200,8 +200,18 @@ def generar_recibo_pago(modeladmin, request, queryset):
 class AsistenciaAdmin(admin.ModelAdmin):
     list_display = ('usuario', 'fecha_visual', 'hora_entrada', 'hora_salida', 'calculo_horas', 'pago_estimado')
     list_filter = ('fecha', 'usuario')
-    actions = [generar_recibo_pago] # <--- ACTIVAMOS LA ACCIÓN AQUÍ
+    actions = [generar_recibo_pago] # <--- ACTIVAMOS LA ACCIÓN
     
+    # --- FILTRO DE SEGURIDAD PARA ACCIONES ---
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        # Si el usuario NO es superusuario, eliminamos la opción de generar recibo
+        if not request.user.is_superuser:
+            if 'generar_recibo_pago' in actions:
+                del actions['generar_recibo_pago']
+        return actions
+    # -----------------------------------------
+
     def fecha_visual(self, obj):
         return obj.fecha.strftime("%d/%m/%Y")
     fecha_visual.short_description = "Fecha"
@@ -213,11 +223,9 @@ class AsistenciaAdmin(admin.ModelAdmin):
         return format_html('<b style="color:{}">{} hrs</b>', color, horas)
     calculo_horas.short_description = "Jornada"
 
-    # NUEVO: Calcula el pago del día automáticamente
     def pago_estimado(self, obj):
         try:
             horas = obj.horas_trabajadas()
-            # Accedemos al perfil del usuario para ver su tarifa
             tarifa = obj.usuario.perfil.tarifa_por_hora
             total = float(horas) * float(tarifa)
             return f"S/. {total:.2f}"
@@ -264,7 +272,6 @@ class ClienteAdmin(admin.ModelAdmin):
         deuda = vendido - abonado
 
         if deuda > 0:
-            # FIX DE SEGURIDAD: Convertimos a string ANTES de formatear HTML
             texto_deuda = f"{deuda:.2f}"
             return format_html(
                 '<span style="color:#dc3545; font-weight:bold; font-size:1.1em;">S/. {}</span><br>'
