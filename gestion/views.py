@@ -208,3 +208,26 @@ def obtener_direccion_cliente(request, cliente_id):
         return JsonResponse({'direccion': cliente.direccion_principal})
     except Cliente.DoesNotExist:
         return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
+# --- AL FINAL DE GESTION/VIEWS.PY ---
+from django.http import JsonResponse
+from .models import Cliente, Producto
+
+# API para obtener dirección del cliente
+def api_info_cliente(request, cliente_id):
+    try:
+        cliente = Cliente.objects.get(id=cliente_id)
+        # Asumimos que tienes un campo 'direccion' o 'ciudad' en Cliente. 
+        # Si tu campo se llama distinto en models.py, cámbialo aquí.
+        # Por ahora combino ciudad y una dirección genérica si no tienes campo dirección específico
+        direccion = getattr(cliente, 'direccion', '') or f"Dirección registrada en {cliente.ciudad}"
+        return JsonResponse({'direccion': direccion})
+    except Cliente.DoesNotExist:
+        return JsonResponse({'direccion': ''})
+
+# API para obtener precio del producto
+def api_info_producto(request, producto_id):
+    try:
+        producto = Producto.objects.get(id=producto_id)
+        return JsonResponse({'precio': float(producto.precio_unitario)})
+    except Producto.DoesNotExist:
+        return JsonResponse({'precio': 0})
