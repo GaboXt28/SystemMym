@@ -1,21 +1,20 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.utils.safestring import mark_safe # <--- NUEVO IMPORT OBLIGATORIO
+from django.utils.safestring import mark_safe  # <--- IMPORTANTE: Agregado para arreglar el error
 from django.urls import reverse
 from django.utils import timezone 
 from django.http import HttpResponseRedirect
-from django.db.models import Sum 
+from django.db.models import Sum
 from datetime import datetime 
 from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto, Asistencia
 
-# --- 1. CONFIGURACIÓN DE PRODUCTOS (CON SEGURIDAD) ---
+# --- 1. CONFIGURACIÓN DE PRODUCTOS ---
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_unitario', 'stock_actual', 'alerta_stock')
     search_fields = ('nombre',)
     list_per_page = 20
 
-    # LÓGICA DE SEGURIDAD:
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_superuser:
             return []
@@ -27,7 +26,7 @@ class ProductoAdmin(admin.ModelAdmin):
         return format_html('<span style="color:green; font-weight:bold;">✅ OK ({})</span>', obj.stock_actual)
     alerta_stock.short_description = "Estado Stock"
 
-# --- 2. CONFIGURACIÓN DE ASISTENCIA (CORREGIDO HORA LIMA) ---
+# --- 2. CONFIGURACIÓN DE ASISTENCIA ---
 @admin.register(Asistencia)
 class AsistenciaAdmin(admin.ModelAdmin):
     list_display = ('usuario', 'fecha_visual', 'hora_entrada', 'hora_salida', 'calculo_horas')
@@ -44,21 +43,15 @@ class AsistenciaAdmin(admin.ModelAdmin):
         return format_html('<b style="color:{}">{} hrs</b>', color, horas)
     calculo_horas.short_description = "Jornada"
 
-    # LÓGICA AUTOMÁTICA DE RELOJ (CORREGIDA)
     def save_model(self, request, obj, form, change):
-        # 1. Obtenemos la hora actual convertida a LIMA
         ahora_lima = timezone.localtime(timezone.now())
-
         if not change: 
-            # SI ES NUEVO REGISTRO -> HORA DE LLEGADA
             obj.usuario = request.user
-            obj.fecha = ahora_lima.date()      # Fecha Perú
-            obj.hora_entrada = ahora_lima.time() # Hora Perú
+            obj.fecha = ahora_lima.date()
+            obj.hora_entrada = ahora_lima.time()
         else:
-            # SI SE ESTÁ EDITANDO -> HORA DE SALIDA
             if not obj.hora_salida:
-                obj.hora_salida = ahora_lima.time() # Hora Perú
-        
+                obj.hora_salida = ahora_lima.time()
         super().save_model(request, obj, form, change)
 
     def get_readonly_fields(self, request, obj=None):
@@ -70,7 +63,7 @@ class AsistenciaAdmin(admin.ModelAdmin):
             return qs 
         return qs.filter(usuario=request.user)
 
-# --- 3. CONFIGURACIÓN DE CLIENTES (CON COBRANZA ACTIVA - CORREGIDO) ---
+# --- 3. CONFIGURACIÓN DE CLIENTES (CORREGIDO ERROR 500) ---
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre_contacto', 'celular', 'ciudad', 'estado_deuda_visual', 'acciones_cobranza')
@@ -81,35 +74,27 @@ class ClienteAdmin(admin.ModelAdmin):
     # A. CÁLCULO DE DEUDA VISUAL
     def estado_deuda_visual(self, obj):
         guias_pendientes = obj.guiaentrega_set.exclude(estado_pago='PAGADO')
-        
         datos = guias_pendientes.aggregate(
             total_vendido=Sum('total_venta'),
             total_abonado=Sum('monto_cobrado')
         )
-        
         vendido = datos['total_vendido'] or 0
         abonado = datos['total_abonado'] or 0
         deuda = vendido - abonado
 
         if deuda > 0:
-            # ROJO = DEBE DINERO
-            # Usamos format_html pasando las variables como argumentos
             return format_html(
                 '<span style="color:#dc3545; font-weight:bold; font-size:1.1em;">S/. {:.2f}</span><br>'
                 '<span style="font-size:0.8em; color:#666;">En {} guía(s)</span>',
                 deuda, guias_pendientes.count()
             )
         else:
-            # VERDE = AL DÍA
-            # FIX: Usamos format_html con un placeholder {} para evitar el TypeError
-            return format_html(
-                '<span style="color:#28a745; font-weight:bold;">{}</span>',
-                '✅ Al día'
-            )
+            # CORREGIDO: Usamos mark_safe en lugar de format_html para texto fijo
+            return mark_safe('<span style="color:#28a745; font-weight:bold;">✅ Al día</span>')
     
     estado_deuda_visual.short_description = "Deuda Total"
 
-    # B. BOTONES DE ACCIÓN (PAGAR / WHATSAPP)
+    # B. BOTONES DE ACCIÓN
     def acciones_cobranza(self, obj):
         guias_pendientes = obj.guiaentrega_set.exclude(estado_pago='PAGADO')
         deuda = 0
@@ -120,13 +105,10 @@ class ClienteAdmin(admin.ModelAdmin):
         botones = []
 
         if deuda > 0:
-            # Botón 1: Pagar
             url_pagar = reverse('admin:gestion_guiaentrega_changelist') + f'?cliente__id__exact={obj.id}&estado_pago__in=PENDIENTE,PARCIAL'
             botones.append(
                 f'<a class="button" href="{url_pagar}" style="background-color:#ffc107; color:#000; font-weight:bold; padding:4px 8px; border-radius:4px;">💰 Pagar</a>'
             )
-            
-            # Botón 2: WhatsApp
             if obj.celular:
                 msg = f"Hola {obj.nombre_contacto}, le escribimos de MyM. Le recordamos que tiene un saldo pendiente de S/. {deuda:.2f}. Saludos."
                 url_wsp = f"https://wa.me/51{obj.celular}?text={msg}"
@@ -135,13 +117,12 @@ class ClienteAdmin(admin.ModelAdmin):
                     f'<i class="fab fa-whatsapp"></i> Cobrar</a>'
                 )
         else:
-            # Botón Historial
             url_historial = reverse('admin:gestion_guiaentrega_changelist') + f'?cliente__id__exact={obj.id}'
             botones.append(
                 f'<a class="button" href="{url_historial}" style="background-color:#17a2b8; color:white; padding:4px 8px; border-radius:4px;">📋 Historial</a>'
             )
 
-        # FIX: Usamos mark_safe en lugar de format_html para unir botones HTML ya construidos
+        # CORREGIDO: Usamos mark_safe para unir la lista de botones HTML
         return mark_safe("".join(botones))
 
     acciones_cobranza.short_description = "Acciones Rápidas"
@@ -162,9 +143,7 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
     list_display = ('numero_guia_visual', 'cliente', 'fecha_emision', 'total_venta', 'estado_pago_color', 'acciones_pdf')
     list_filter = ('estado_pago', 'fecha_emision') 
     search_fields = ('numero_guia', 'cliente__nombre_contacto', 'cliente__nombre_empresa')
-    
     date_hierarchy = 'fecha_emision' 
-    
     inlines = [DetalleGuiaInline, PagoInline]
     autocomplete_fields = ['cliente']
     ordering = ('-fecha_emision', '-numero_guia')
@@ -172,7 +151,6 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
     class Media:
         js = ('gestion/js/custom_admin.js',)
 
-    # --- PRE-LLENAR NÚMERO DE GUÍA ---
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
         anio_actual = timezone.now().year
@@ -187,7 +165,6 @@ class GuiaEntregaAdmin(admin.ModelAdmin):
             initial['numero_guia'] = '000001' 
         return initial
 
-    # --- VISUALIZACIÓN POR AÑO ---
     def changelist_view(self, request, extra_context=None):
         referer = request.META.get('HTTP_REFERER', '')
         path_actual = request.path
