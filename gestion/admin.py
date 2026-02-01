@@ -5,8 +5,31 @@ from django.urls import reverse
 from django.utils import timezone 
 from django.http import HttpResponseRedirect
 from django.db.models import Sum
-from datetime import datetime 
-from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto, Asistencia
+from datetime import datetime
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+
+# Importamos tus modelos (incluyendo el nuevo PerfilColaborador)
+from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto, Asistencia, PerfilColaborador
+
+# --- 0. CONFIGURACIÓN DE USUARIOS (NÓMINA) ---
+# Esto permite ponerle sueldo a los usuarios
+class PerfilInline(admin.StackedInline):
+    model = PerfilColaborador
+    can_delete = False
+    verbose_name_plural = 'Datos de Nómina'
+    fk_name = 'usuario'
+
+# Reemplazamos el administrador de usuarios original
+class UserAdmin(BaseUserAdmin):
+    inlines = [PerfilInline]
+
+# Desregistramos y volvemos a registrar
+try:
+    admin.site.unregister(User)
+except admin.sites.NotRegistered:
+    pass
+admin.site.register(User, UserAdmin)
 
 # --- 1. CONFIGURACIÓN DE PRODUCTOS ---
 @admin.register(Producto)
@@ -29,7 +52,7 @@ class ProductoAdmin(admin.ModelAdmin):
 # --- 2. CONFIGURACIÓN DE ASISTENCIA ---
 @admin.register(Asistencia)
 class AsistenciaAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'fecha_visual', 'hora_entrada', 'hora_salida', 'calculo_horas')
+    list_display = ('usuario', 'fecha_visual', 'hora_entrada', 'hora_salida', 'calculo_horas', 'pago_estimado')
     list_filter = ('fecha', 'usuario')
     
     def fecha_visual(self, obj):
@@ -42,6 +65,18 @@ class AsistenciaAdmin(admin.ModelAdmin):
         if horas == 0: color = "red"
         return format_html('<b style="color:{}">{} hrs</b>', color, horas)
     calculo_horas.short_description = "Jornada"
+
+    # NUEVO: Calcula el pago del día automáticamente
+    def pago_estimado(self, obj):
+        try:
+            horas = obj.horas_trabajadas()
+            # Accedemos al perfil del usuario para ver su tarifa
+            tarifa = obj.usuario.perfil.tarifa_por_hora
+            total = float(horas) * float(tarifa)
+            return f"S/. {total:.2f}"
+        except:
+            return "-"
+    pago_estimado.short_description = "Pago (Día)"
 
     def save_model(self, request, obj, form, change):
         ahora_lima = timezone.localtime(timezone.now())
@@ -63,7 +98,7 @@ class AsistenciaAdmin(admin.ModelAdmin):
             return qs 
         return qs.filter(usuario=request.user)
 
-# --- 3. CONFIGURACIÓN DE CLIENTES (CORREGIDO ERROR FLOAT) ---
+# --- 3. CONFIGURACIÓN DE CLIENTES ---
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre_contacto', 'celular', 'ciudad', 'estado_deuda_visual', 'acciones_cobranza')
@@ -71,7 +106,6 @@ class ClienteAdmin(admin.ModelAdmin):
     list_filter = ('ciudad',)
     list_per_page = 20
 
-    # A. CÁLCULO DE DEUDA VISUAL
     def estado_deuda_visual(self, obj):
         guias_pendientes = obj.guiaentrega_set.exclude(estado_pago='PAGADO')
         datos = guias_pendientes.aggregate(
@@ -83,9 +117,8 @@ class ClienteAdmin(admin.ModelAdmin):
         deuda = vendido - abonado
 
         if deuda > 0:
-            # CORRECCIÓN CLAVE: Formateamos el número AQUÍ, afuera del HTML
+            # FIX DE SEGURIDAD: Convertimos a string ANTES de formatear HTML
             texto_deuda = f"{deuda:.2f}"
-            
             return format_html(
                 '<span style="color:#dc3545; font-weight:bold; font-size:1.1em;">S/. {}</span><br>'
                 '<span style="font-size:0.8em; color:#666;">En {} guía(s)</span>',
@@ -96,7 +129,6 @@ class ClienteAdmin(admin.ModelAdmin):
     
     estado_deuda_visual.short_description = "Deuda Total"
 
-    # B. BOTONES DE ACCIÓN
     def acciones_cobranza(self, obj):
         guias_pendientes = obj.guiaentrega_set.exclude(estado_pago='PAGADO')
         deuda = 0
@@ -107,9 +139,7 @@ class ClienteAdmin(admin.ModelAdmin):
         botones = []
 
         if deuda > 0:
-            # Formateamos el monto para el mensaje de WhatsApp
             texto_deuda = f"{deuda:.2f}"
-            
             url_pagar = reverse('admin:gestion_guiaentrega_changelist') + f'?cliente__id__exact={obj.id}&estado_pago__in=PENDIENTE,PARCIAL'
             botones.append(
                 f'<a class="button" href="{url_pagar}" style="background-color:#ffc107; color:#000; font-weight:bold; padding:4px 8px; border-radius:4px;">💰 Pagar</a>'
