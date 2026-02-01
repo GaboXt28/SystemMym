@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe # <--- NUEVO IMPORT OBLIGATORIO
 from django.urls import reverse
 from django.utils import timezone 
 from django.http import HttpResponseRedirect
-from django.db.models import Sum # <--- IMPORTANTE: Necesario para sumar deudas
+from django.db.models import Sum 
 from datetime import datetime 
 from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto, Asistencia
 
@@ -69,7 +70,7 @@ class AsistenciaAdmin(admin.ModelAdmin):
             return qs 
         return qs.filter(usuario=request.user)
 
-# --- 3. CONFIGURACIÓN DE CLIENTES (CON COBRANZA ACTIVA) ---
+# --- 3. CONFIGURACIÓN DE CLIENTES (CON COBRANZA ACTIVA - CORREGIDO) ---
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre_contacto', 'celular', 'ciudad', 'estado_deuda_visual', 'acciones_cobranza')
@@ -79,10 +80,8 @@ class ClienteAdmin(admin.ModelAdmin):
 
     # A. CÁLCULO DE DEUDA VISUAL
     def estado_deuda_visual(self, obj):
-        # Filtramos solo lo pendiente
         guias_pendientes = obj.guiaentrega_set.exclude(estado_pago='PAGADO')
         
-        # Calculamos totales
         datos = guias_pendientes.aggregate(
             total_vendido=Sum('total_venta'),
             total_abonado=Sum('monto_cobrado')
@@ -94,6 +93,7 @@ class ClienteAdmin(admin.ModelAdmin):
 
         if deuda > 0:
             # ROJO = DEBE DINERO
+            # Usamos format_html pasando las variables como argumentos
             return format_html(
                 '<span style="color:#dc3545; font-weight:bold; font-size:1.1em;">S/. {:.2f}</span><br>'
                 '<span style="font-size:0.8em; color:#666;">En {} guía(s)</span>',
@@ -101,7 +101,11 @@ class ClienteAdmin(admin.ModelAdmin):
             )
         else:
             # VERDE = AL DÍA
-            return format_html('<span style="color:#28a745; font-weight:bold;">✅ Al día</span>')
+            # FIX: Usamos format_html con un placeholder {} para evitar el TypeError
+            return format_html(
+                '<span style="color:#28a745; font-weight:bold;">{}</span>',
+                '✅ Al día'
+            )
     
     estado_deuda_visual.short_description = "Deuda Total"
 
@@ -116,13 +120,13 @@ class ClienteAdmin(admin.ModelAdmin):
         botones = []
 
         if deuda > 0:
-            # Botón 1: Pagar (Lleva a filtrar guías pendientes de este cliente)
+            # Botón 1: Pagar
             url_pagar = reverse('admin:gestion_guiaentrega_changelist') + f'?cliente__id__exact={obj.id}&estado_pago__in=PENDIENTE,PARCIAL'
             botones.append(
                 f'<a class="button" href="{url_pagar}" style="background-color:#ffc107; color:#000; font-weight:bold; padding:4px 8px; border-radius:4px;">💰 Pagar</a>'
             )
             
-            # Botón 2: WhatsApp (Solo si tiene celular)
+            # Botón 2: WhatsApp
             if obj.celular:
                 msg = f"Hola {obj.nombre_contacto}, le escribimos de MyM. Le recordamos que tiene un saldo pendiente de S/. {deuda:.2f}. Saludos."
                 url_wsp = f"https://wa.me/51{obj.celular}?text={msg}"
@@ -131,13 +135,14 @@ class ClienteAdmin(admin.ModelAdmin):
                     f'<i class="fab fa-whatsapp"></i> Cobrar</a>'
                 )
         else:
-            # Si no debe nada, botón para ver historial completo
+            # Botón Historial
             url_historial = reverse('admin:gestion_guiaentrega_changelist') + f'?cliente__id__exact={obj.id}'
             botones.append(
                 f'<a class="button" href="{url_historial}" style="background-color:#17a2b8; color:white; padding:4px 8px; border-radius:4px;">📋 Historial</a>'
             )
 
-        return format_html("".join(botones))
+        # FIX: Usamos mark_safe en lugar de format_html para unir botones HTML ya construidos
+        return mark_safe("".join(botones))
 
     acciones_cobranza.short_description = "Acciones Rápidas"
 
