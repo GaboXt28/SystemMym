@@ -14,7 +14,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-nae_=9++)5)-(_!6me6c_
 
 # --- SEGURIDAD: MODO PRODUCCIÓN ---
 # Lo ponemos en False para seguridad. Solo cámbialo a True si hay un error grave que necesitas investigar.
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
