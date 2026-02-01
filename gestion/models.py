@@ -207,7 +207,11 @@ class Asistencia(models.Model):
         verbose_name = "Registro de Asistencia"
         verbose_name_plural = "Control de Asistencias"
     
-    class PerfilColaborador(models.Model):
+# --- PEGAR ESTO AL FINAL DE GESTION/MODELS.PY ---
+
+from django.contrib.auth.models import User
+
+class PerfilColaborador(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     tarifa_por_hora = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, verbose_name="Tarifa x Hora (S/.)")
     celular = models.CharField(max_length=20, blank=True, null=True)
