@@ -3,28 +3,25 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.utils import timezone 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse # <--- AGREGADO HttpResponse
 from django.db.models import Sum
 from datetime import datetime
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 
-# Importamos tus modelos (incluyendo el nuevo PerfilColaborador)
+# Importamos tus modelos
 from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto, Asistencia, PerfilColaborador
 
 # --- 0. CONFIGURACIÓN DE USUARIOS (NÓMINA) ---
-# Esto permite ponerle sueldo a los usuarios
 class PerfilInline(admin.StackedInline):
     model = PerfilColaborador
     can_delete = False
     verbose_name_plural = 'Datos de Nómina'
     fk_name = 'usuario'
 
-# Reemplazamos el administrador de usuarios original
 class UserAdmin(BaseUserAdmin):
     inlines = [PerfilInline]
 
-# Desregistramos y volvemos a registrar
 try:
     admin.site.unregister(User)
 except admin.sites.NotRegistered:
@@ -49,11 +46,161 @@ class ProductoAdmin(admin.ModelAdmin):
         return format_html('<span style="color:green; font-weight:bold;">✅ OK ({})</span>', obj.stock_actual)
     alerta_stock.short_description = "Estado Stock"
 
-# --- 2. CONFIGURACIÓN DE ASISTENCIA ---
+# --- 2. CONFIGURACIÓN DE ASISTENCIA (CON RECIBO) ---
+
+# --- FUNCIÓN GENERADORA DE RECIBOS ---
+@admin.action(description="📄 Generar Recibo de Pago (Días seleccionados)")
+def generar_recibo_pago(modeladmin, request, queryset):
+    # Ordenamos por fecha
+    seleccion = queryset.order_by('fecha')
+    
+    # Identificamos usuarios únicos seleccionados
+    usuarios_seleccionados = set(asistencia.usuario for asistencia in seleccion)
+    
+    # Estilos CSS para el recibo (Diseño limpio y profesional)
+    html_content = """
+    <html>
+    <head>
+        <title>Recibo de Nómina</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: #f9f9f9; }
+            .contenedor-recibo { 
+                background: white; 
+                border: 1px solid #ccc; 
+                padding: 30px; 
+                margin-bottom: 40px; 
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                page-break-inside: avoid; /* Evita que el recibo se corte al imprimir */
+            }
+            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #2c3e50; font-size: 24px; }
+            .header p { margin: 5px 0 0; color: #7f8c8d; font-size: 14px; }
+            
+            .info-empleado { margin-bottom: 20px; font-size: 15px; }
+            .info-empleado strong { color: #333; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+            th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: center; }
+            th { background-color: #f8f9fa; color: #333; font-weight: bold; }
+            tr:nth-child(even) { background-color: #fcfcfc; }
+            
+            .total-row { background-color: #2c3e50 !important; color: white; font-weight: bold; font-size: 16px; }
+            .total-row td { border: 1px solid #2c3e50; }
+            
+            .firmas { margin-top: 60px; display: flex; justify-content: space-between; }
+            .firma-box { width: 40%; border-top: 1px solid #333; text-align: center; padding-top: 10px; font-size: 14px; color: #333; }
+            
+            /* Botones que no salen en la impresión */
+            @media print { .no-print { display: none; } body { background: white; padding: 0; } .contenedor-recibo { border: none; box-shadow: none; } }
+            
+            .btn { padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px; display: inline-block; cursor: pointer; border: none;}
+            .btn-print { background: #28a745; color: white; }
+            .btn-back { background: #6c757d; color: white; }
+        </style>
+    </head>
+    <body>
+        <div class="no-print">
+            <button onclick="window.print()" class="btn btn-print">🖨️ Imprimir Recibo</button>
+            <a href="javascript:history.back()" class="btn btn-back">⬅️ Volver</a>
+            <br><br>
+        </div>
+    """
+
+    for usuario in usuarios_seleccionados:
+        # Filtramos días de este usuario
+        asistencias_usuario = seleccion.filter(usuario=usuario)
+        
+        nombre_completo = f"{usuario.first_name} {usuario.last_name}"
+        if len(nombre_completo.strip()) < 2:
+            nombre_completo = usuario.username # Si no tiene nombre real, usa el usuario
+
+        # Obtener tarifa
+        try:
+            tarifa = usuario.perfil.tarifa_por_hora
+        except:
+            tarifa = 0
+
+        total_dinero = 0
+        total_horas = 0
+
+        # Encabezado del recibo
+        html_content += f"""
+        <div class="contenedor-recibo">
+            <div class="header">
+                <h1>RECIBO DE PAGO</h1>
+                <p>CREACIONES MYM - Control Interno</p>
+            </div>
+            
+            <div class="info-empleado">
+                <p><strong>Colaborador:</strong> {nombre_completo}</p>
+                <p><strong>Fecha de Emisión:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+                <p><strong>Tarifa por Hora:</strong> S/. {tarifa}</p>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Entrada</th>
+                        <th>Salida</th>
+                        <th>Horas Trab.</th>
+                        <th>Total Día</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
+
+        # Filas de días
+        for asistencia in asistencias_usuario:
+            horas = asistencia.horas_trabajadas()
+            pago_dia = float(horas) * float(tarifa)
+            
+            total_dinero += pago_dia
+            total_horas += horas
+
+            html_content += f"""
+                <tr>
+                    <td>{asistencia.fecha.strftime('%d/%m/%Y')}</td>
+                    <td>{asistencia.hora_entrada.strftime('%H:%M') if asistencia.hora_entrada else '-'}</td>
+                    <td>{asistencia.hora_salida.strftime('%H:%M') if asistencia.hora_salida else '-'}</td>
+                    <td>{horas} hrs</td>
+                    <td>S/. {pago_dia:.2f}</td>
+                </tr>
+            """
+
+        # Fila de Totales
+        html_content += f"""
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right; padding-right: 20px;">TOTAL A PAGAR:</td>
+                    <td>{total_horas:.2f} hrs</td>
+                    <td>S/. {total_dinero:.2f}</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="firmas">
+                <div class="firma-box">
+                    <br>
+                    Administración
+                </div>
+                <div class="firma-box">
+                    <br>
+                    Recibí Conforme<br>
+                    {nombre_completo}
+                </div>
+            </div>
+        </div>
+        """
+
+    html_content += "</body></html>"
+    return HttpResponse(html_content)
+
+
 @admin.register(Asistencia)
 class AsistenciaAdmin(admin.ModelAdmin):
     list_display = ('usuario', 'fecha_visual', 'hora_entrada', 'hora_salida', 'calculo_horas', 'pago_estimado')
     list_filter = ('fecha', 'usuario')
+    actions = [generar_recibo_pago] # <--- ACTIVAMOS LA ACCIÓN AQUÍ
     
     def fecha_visual(self, obj):
         return obj.fecha.strftime("%d/%m/%Y")
