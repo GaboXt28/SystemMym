@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.utils.safestring import mark_safe  # <--- IMPORTANTE: Agregado para arreglar el error
+from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.utils import timezone 
 from django.http import HttpResponseRedirect
@@ -63,7 +63,7 @@ class AsistenciaAdmin(admin.ModelAdmin):
             return qs 
         return qs.filter(usuario=request.user)
 
-# --- 3. CONFIGURACIÓN DE CLIENTES (CORREGIDO ERROR 500) ---
+# --- 3. CONFIGURACIÓN DE CLIENTES (CORREGIDO ERROR FLOAT) ---
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre_contacto', 'celular', 'ciudad', 'estado_deuda_visual', 'acciones_cobranza')
@@ -83,13 +83,15 @@ class ClienteAdmin(admin.ModelAdmin):
         deuda = vendido - abonado
 
         if deuda > 0:
+            # CORRECCIÓN CLAVE: Formateamos el número AQUÍ, afuera del HTML
+            texto_deuda = f"{deuda:.2f}"
+            
             return format_html(
-                '<span style="color:#dc3545; font-weight:bold; font-size:1.1em;">S/. {:.2f}</span><br>'
+                '<span style="color:#dc3545; font-weight:bold; font-size:1.1em;">S/. {}</span><br>'
                 '<span style="font-size:0.8em; color:#666;">En {} guía(s)</span>',
-                deuda, guias_pendientes.count()
+                texto_deuda, guias_pendientes.count()
             )
         else:
-            # CORREGIDO: Usamos mark_safe en lugar de format_html para texto fijo
             return mark_safe('<span style="color:#28a745; font-weight:bold;">✅ Al día</span>')
     
     estado_deuda_visual.short_description = "Deuda Total"
@@ -105,12 +107,15 @@ class ClienteAdmin(admin.ModelAdmin):
         botones = []
 
         if deuda > 0:
+            # Formateamos el monto para el mensaje de WhatsApp
+            texto_deuda = f"{deuda:.2f}"
+            
             url_pagar = reverse('admin:gestion_guiaentrega_changelist') + f'?cliente__id__exact={obj.id}&estado_pago__in=PENDIENTE,PARCIAL'
             botones.append(
                 f'<a class="button" href="{url_pagar}" style="background-color:#ffc107; color:#000; font-weight:bold; padding:4px 8px; border-radius:4px;">💰 Pagar</a>'
             )
             if obj.celular:
-                msg = f"Hola {obj.nombre_contacto}, le escribimos de MyM. Le recordamos que tiene un saldo pendiente de S/. {deuda:.2f}. Saludos."
+                msg = f"Hola {obj.nombre_contacto}, le escribimos de MyM. Le recordamos que tiene un saldo pendiente de S/. {texto_deuda}. Saludos."
                 url_wsp = f"https://wa.me/51{obj.celular}?text={msg}"
                 botones.append(
                     f'<a class="button" href="{url_wsp}" target="_blank" style="background-color:#25D366; color:white; padding:4px 8px; border-radius:4px; margin-left:5px;">'
@@ -122,7 +127,6 @@ class ClienteAdmin(admin.ModelAdmin):
                 f'<a class="button" href="{url_historial}" style="background-color:#17a2b8; color:white; padding:4px 8px; border-radius:4px;">📋 Historial</a>'
             )
 
-        # CORREGIDO: Usamos mark_safe para unir la lista de botones HTML
         return mark_safe("".join(botones))
 
     acciones_cobranza.short_description = "Acciones Rápidas"
