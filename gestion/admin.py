@@ -3,6 +3,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils import timezone 
 from django.http import HttpResponseRedirect
+from django.db.models import Sum # <--- IMPORTANTE: Necesario para sumar deudas
 from datetime import datetime 
 from .models import Cliente, Producto, GuiaEntrega, DetalleGuia, Pago, Proveedor, Gasto, Asistencia
 
@@ -44,7 +45,7 @@ class AsistenciaAdmin(admin.ModelAdmin):
 
     # LÓGICA AUTOMÁTICA DE RELOJ (CORREGIDA)
     def save_model(self, request, obj, form, change):
-        # 1. Obtenemos la hora actual convertida a LIMA (según settings.py)
+        # 1. Obtenemos la hora actual convertida a LIMA
         ahora_lima = timezone.localtime(timezone.now())
 
         if not change: 
@@ -68,12 +69,77 @@ class AsistenciaAdmin(admin.ModelAdmin):
             return qs 
         return qs.filter(usuario=request.user)
 
-# --- 3. CONFIGURACIÓN DE CLIENTES ---
+# --- 3. CONFIGURACIÓN DE CLIENTES (CON COBRANZA ACTIVA) ---
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
-    list_display = ('nombre_contacto', 'nombre_empresa', 'celular', 'ciudad')
+    list_display = ('nombre_contacto', 'celular', 'ciudad', 'estado_deuda_visual', 'acciones_cobranza')
     search_fields = ('nombre_contacto', 'nombre_empresa')
     list_filter = ('ciudad',)
+    list_per_page = 20
+
+    # A. CÁLCULO DE DEUDA VISUAL
+    def estado_deuda_visual(self, obj):
+        # Filtramos solo lo pendiente
+        guias_pendientes = obj.guiaentrega_set.exclude(estado_pago='PAGADO')
+        
+        # Calculamos totales
+        datos = guias_pendientes.aggregate(
+            total_vendido=Sum('total_venta'),
+            total_abonado=Sum('monto_cobrado')
+        )
+        
+        vendido = datos['total_vendido'] or 0
+        abonado = datos['total_abonado'] or 0
+        deuda = vendido - abonado
+
+        if deuda > 0:
+            # ROJO = DEBE DINERO
+            return format_html(
+                '<span style="color:#dc3545; font-weight:bold; font-size:1.1em;">S/. {:.2f}</span><br>'
+                '<span style="font-size:0.8em; color:#666;">En {} guía(s)</span>',
+                deuda, guias_pendientes.count()
+            )
+        else:
+            # VERDE = AL DÍA
+            return format_html('<span style="color:#28a745; font-weight:bold;">✅ Al día</span>')
+    
+    estado_deuda_visual.short_description = "Deuda Total"
+
+    # B. BOTONES DE ACCIÓN (PAGAR / WHATSAPP)
+    def acciones_cobranza(self, obj):
+        guias_pendientes = obj.guiaentrega_set.exclude(estado_pago='PAGADO')
+        deuda = 0
+        if guias_pendientes.exists():
+            datos = guias_pendientes.aggregate(t=Sum('total_venta'), a=Sum('monto_cobrado'))
+            deuda = (datos['t'] or 0) - (datos['a'] or 0)
+
+        botones = []
+
+        if deuda > 0:
+            # Botón 1: Pagar (Lleva a filtrar guías pendientes de este cliente)
+            url_pagar = reverse('admin:gestion_guiaentrega_changelist') + f'?cliente__id__exact={obj.id}&estado_pago__in=PENDIENTE,PARCIAL'
+            botones.append(
+                f'<a class="button" href="{url_pagar}" style="background-color:#ffc107; color:#000; font-weight:bold; padding:4px 8px; border-radius:4px;">💰 Pagar</a>'
+            )
+            
+            # Botón 2: WhatsApp (Solo si tiene celular)
+            if obj.celular:
+                msg = f"Hola {obj.nombre_contacto}, le escribimos de MyM. Le recordamos que tiene un saldo pendiente de S/. {deuda:.2f}. Saludos."
+                url_wsp = f"https://wa.me/51{obj.celular}?text={msg}"
+                botones.append(
+                    f'<a class="button" href="{url_wsp}" target="_blank" style="background-color:#25D366; color:white; padding:4px 8px; border-radius:4px; margin-left:5px;">'
+                    f'<i class="fab fa-whatsapp"></i> Cobrar</a>'
+                )
+        else:
+            # Si no debe nada, botón para ver historial completo
+            url_historial = reverse('admin:gestion_guiaentrega_changelist') + f'?cliente__id__exact={obj.id}'
+            botones.append(
+                f'<a class="button" href="{url_historial}" style="background-color:#17a2b8; color:white; padding:4px 8px; border-radius:4px;">📋 Historial</a>'
+            )
+
+        return format_html("".join(botones))
+
+    acciones_cobranza.short_description = "Acciones Rápidas"
 
 # --- 4. CONFIGURACIÓN DE GUÍAS DE ENTREGA ---
 class DetalleGuiaInline(admin.TabularInline):
