@@ -106,7 +106,7 @@ class Pago(models.Model):
 class DetalleGuia(models.Model):
     guia = models.ForeignKey(GuiaEntrega, related_name='detalles', on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
-    cantidad = models.PositiveIntegerField()
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=1, verbose_name="Cantidad")
     precio_aplicado = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     
     @property
