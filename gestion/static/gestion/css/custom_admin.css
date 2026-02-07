@@ -1,50 +1,57 @@
 /* gestion/static/gestion/css/custom_admin.css */
 
 /* =========================================
-   1. FONDO Y ESTRUCTURA
+   1. FONDO Y ANIMACIONES (EL EFECTO WOW)
    ========================================= */
 body {
-    background: linear-gradient(135deg, #eef2f3 0%, #8e9eab 100%) !important;
+    /* Degradado Premium (Gris azulado metálico) */
+    background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%) !important;
     min-height: 100vh;
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }
 
-.content-wrapper { background: transparent !important; }
+/* Hace que el contenido principal sea transparente para ver el fondo */
+.content-wrapper {
+    background: transparent !important;
+}
 
-/* Animación de entrada suave */
-.content { animation: fadeInUp 0.6s ease-out; }
+/* Animación de entrada: El contenido "sube" suavemente al cargar */
+.content {
+    animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 /* =========================================
-   2. TARJETAS "GLASSMORPHISM"
+   2. TARJETAS "GLASSMORPHISM" (CRISTAL)
    ========================================= */
 .card {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(10px);
-    border: none !important;
+    background: rgba(255, 255, 255, 0.85) !important; /* Blanco semitransparente */
+    backdrop-filter: blur(12px); /* Efecto borroso detrás del cristal */
+    border: 1px solid rgba(255, 255, 255, 0.4) !important; /* Borde sutil brillante */
     border-radius: 20px !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1) !important;
+    transition: all 0.3s ease;
     margin-bottom: 25px !important;
     overflow: hidden;
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.12) !important;
+    transform: translateY(-5px); /* Flota al pasar el mouse */
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15) !important;
 }
 
 .card-header {
-    background: linear-gradient(90deg, #fdfbfb 0%, #ebedee 100%) !important;
+    background: linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.0) 100%) !important;
     border-bottom: 1px solid rgba(0,0,0,0.05) !important;
     padding: 15px 25px !important;
 }
 
 .card-title {
-    color: #2c3e50;
+    color: #1e293b;
     font-weight: 800 !important;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -52,34 +59,38 @@ body {
 }
 
 /* =========================================
-   3. BOTONES MODERNOS
+   3. BOTONES MODERNOS (GRADIENTES)
    ========================================= */
 .btn {
-    border-radius: 50px !important;
+    border-radius: 50px !important; /* Redondos */
     padding: 8px 25px !important;
     font-weight: 600 !important;
     border: none !important;
     transition: all 0.3s ease;
     text-transform: uppercase;
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
     letter-spacing: 1px;
     box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .btn-primary, .btn-success {
+    /* Degradado Azul Eléctrico */
     background: linear-gradient(87deg, #5e72e4 0%, #825ee4 100%) !important;
     color: white !important;
 }
 
-.btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
-.btn:active { transform: translateY(1px); }
+.btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+    box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+}
 
 /* =========================================
-   4. INPUTS Y TABLAS
+   4. INPUTS FLUIDOS
    ========================================= */
 .form-control, .select2-selection {
-    background-color: #f4f7fa !important;
-    border: 2px solid transparent !important;
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
     border-radius: 12px !important;
     height: 45px !important;
     transition: all 0.3s ease;
@@ -91,63 +102,61 @@ body {
     box-shadow: 0 0 0 4px rgba(94, 114, 228, 0.15) !important;
 }
 
-.table { border-collapse: separate; border-spacing: 0 8px; }
-.table thead th { border: none; color: #8898aa; font-size: 0.75rem; text-transform: uppercase; padding-left: 20px; }
-.table tbody tr { background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: transform 0.2s; }
-.table tbody tr:hover { transform: scale(1.01); z-index: 10; position: relative; }
-.table td { border: none !important; padding: 15px 20px !important; vertical-align: middle !important; }
-.table tbody tr td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
-.table tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
-
 /* =========================================
    5. BARRA LATERAL (SIDEBAR) - OSCURA
    ========================================= */
 .main-sidebar {
-    background: #172b4d !important;
-    box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+    background: #0f172a !important; /* Azul Noche Profundo */
+    box-shadow: 5px 0 15px rgba(0,0,0,0.05);
 }
 
 .brand-link {
-    background: #12213b !important;
+    background: #0f172a !important;
     border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-    color: white !important;
+    color: #fff !important;
 }
 
-/* Enlaces del menú lateral (BLANCOS) */
+/* Enlaces del MENÚ LATERAL (Blancos) */
 .nav-sidebar .nav-link {
-    border-radius: 30px !important;
+    color: rgba(255,255,255,0.75) !important;
     margin: 5px 10px !important;
-    color: rgba(255,255,255,0.8) !important; /* Texto blanco en sidebar */
+    border-radius: 10px !important;
+    transition: all 0.2s;
+}
+
+.nav-sidebar .nav-link:hover {
+    background: rgba(255,255,255,0.1) !important;
+    color: white !important;
+    transform: translateX(5px);
 }
 
 .nav-sidebar .nav-link.active {
     background: white !important;
-    color: #5e72e4 !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    font-weight: bold;
-}
-
-.nav-sidebar .nav-link:hover:not(.active) {
-    background: rgba(255,255,255,0.1) !important;
-    transform: translateX(5px);
+    color: #5e72e4 !important; /* Azul al estar activo */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    font-weight: 700;
 }
 
 /* =========================================
-   6. BARRA SUPERIOR (NAVBAR) - CLARA
+   6. BARRA SUPERIOR (NAVBAR) - CORRECCIÓN DE TEXTO
    ========================================= */
-/* Corrección: Texto oscuro para el fondo blanco */
+.main-header {
+    background: rgba(255, 255, 255, 0.8) !important; /* Cristal blanco */
+    backdrop-filter: blur(10px); /* Efecto borroso */
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+/* AQUÍ ESTÁ EL ARREGLO: Texto oscuro para el menú de arriba */
 .main-header .nav-link {
-    color: #525f7f !important; /* Gris oscuro elegante */
+    color: #344767 !important; /* Gris oscuro elegante */
     font-weight: 600 !important;
-    font-size: 0.9rem !important;
 }
 
 .main-header .nav-link:hover {
     color: #5e72e4 !important; /* Azul al pasar el mouse */
 }
 
-.main-header {
-    border-bottom: 1px solid #e9ecef !important;
-    background: rgba(255,255,255,0.95) !important;
-    backdrop-filter: blur(5px);
+/* Iconos de búsqueda y usuario */
+.main-header .btn-navbar {
+    color: #344767 !important;
 }
