@@ -1,0 +1,157 @@
+/* gestion/static/gestion/css/custom_admin.css */
+
+/* 1. FONDO Y TIPOGRAFÍA GENERAL */
+body {
+    background-color: #f3f4f6 !important; /* Gris muy suave, descansa la vista */
+    font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    color: #333;
+}
+
+/* 2. TARJETAS (CARDS) FLOTANTES */
+/* Quitamos bordes duros y ponemos sombras suaves */
+.card {
+    border: none !important;
+    border-radius: 15px !important;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05) !important; /* Sombra suave */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 25px !important;
+}
+
+/* Efecto al pasar el mouse por encima de una tarjeta */
+.card:hover {
+    transform: translateY(-3px); /* Se levanta un poco */
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    padding: 20px 25px !important;
+}
+
+.card-title {
+    font-weight: 700 !important;
+    color: #2c3e50;
+    font-size: 1.1rem !important;
+}
+
+/* 3. CAMPOS DE TEXTO (INPUTS) MODERNOS */
+/* Estilo "Bubble": fondo gris claro, sin borde, redondeados */
+.form-control, .select2-container--default .select2-selection--single {
+    background-color: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 10px !important;
+    height: 45px !important; /* Más altos para ser más fáciles de clicar */
+    padding-left: 15px !important;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.form-control:focus {
+    background-color: #fff !important;
+    border-color: #3b82f6 !important; /* Azul moderno al escribir */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* 4. BOTONES "APPLE STYLE" */
+.btn {
+    border-radius: 10px !important;
+    padding: 8px 20px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Botón primario (Guardar) */
+.btn-primary, .btn-success {
+    background: linear-gradient(135deg, #0f172a 0%, #334155 100%) !important; /* Degradado elegante oscuro */
+    color: white !important;
+}
+.btn-primary:hover, .btn-success:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3) !important;
+    transform: scale(1.02);
+}
+
+/* Botón peligro (Borrar) */
+.btn-danger {
+    background-color: #fee2e2 !important;
+    color: #ef4444 !important;
+}
+.btn-danger:hover {
+    background-color: #fecaca !important;
+}
+
+/* 5. TABLAS MÁS LIMPIAS */
+.table {
+    border-collapse: separate !important;
+    border-spacing: 0 5px !important; /* Espacio entre filas */
+}
+
+.table thead th {
+    border: none !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding-bottom: 15px !important;
+}
+
+.table tbody tr {
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    transition: background 0.1s;
+}
+
+.table tbody tr:hover {
+    background-color: #f8fafc !important; /* Highlight al pasar mouse */
+}
+
+.table td {
+    border: none !important;
+    padding: 15px 15px !important;
+    vertical-align: middle !important;
+}
+
+/* Bordes redondeados para las filas de la tabla */
+.table tbody tr td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+.table tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+
+/* 6. BARRA LATERAL (SIDEBAR) */
+.main-sidebar {
+    box-shadow: none !important;
+    border-right: 1px solid #e5e7eb;
+    background-color: #fff !important; /* Sidebar blanca limpia */
+}
+
+.brand-link {
+    border-bottom: 1px solid #f3f4f6 !important;
+    color: #111827 !important; /* Texto negro */
+    background-color: #fff !important;
+}
+
+/* Enlaces del menú */
+.nav-sidebar .nav-item .nav-link {
+    color: #4b5563 !important;
+    border-radius: 10px !important;
+    margin: 2px 10px !important;
+}
+
+.nav-sidebar .nav-item .nav-link.active {
+    background-color: #eff6ff !important; /* Azul muy clarito */
+    color: #2563eb !important; /* Texto azul */
+    font-weight: 700;
+}
+.nav-sidebar .nav-item .nav-link:hover {
+    background-color: #f3f4f6 !important;
+    color: #111827 !important;
+}
+
+/* Iconos del menú */
+.nav-icon {
+    color: #9ca3af;
+}
+.nav-link.active .nav-icon {
+    color: #2563eb !important;
+}

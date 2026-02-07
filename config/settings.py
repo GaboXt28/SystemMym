@@ -148,6 +148,10 @@ JAZZMIN_SETTINGS = {
     
     # Enlazamos tu JS personalizado
     "custom_js": "gestion/js/custom_admin.js",
+    
+    # --- ¡AQUÍ ESTÁ EL CAMBIO CLAVE! ---
+    # Enlazamos tu CSS personalizado para el diseño moderno
+    "custom_css": "gestion/css/custom_admin.css",
 }
 
 # Redirección al login
@@ -155,8 +159,29 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = '/adminconfiguracion/login/'
 
 JAZZMIN_UI_TWEAKS = {
-    "theme": "flatly",
-    "navbar": "navbar-dark",
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-white",
+    "accent": "accent-primary",
+    "navbar": "navbar-white navbar-light",
+    "no_navbar_border": True,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "theme": "materia",  # Tema base moderno
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
 }
 
 # ==============================================================================
