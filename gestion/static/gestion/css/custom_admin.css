@@ -1,157 +1,184 @@
 /* gestion/static/gestion/css/custom_admin.css */
 
-/* 1. FONDO Y TIPOGRAFÍA GENERAL */
+/* =========================================
+   1. FONDO Y ESTRUCTURA (La base moderna)
+   ========================================= */
 body {
-    background-color: #f3f4f6 !important; /* Gris muy suave, descansa la vista */
-    font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-    color: #333;
+    /* Degradado sutil gris-azulado en el fondo para quitar lo "plano" */
+    background: linear-gradient(135deg, #eef2f3 0%, #8e9eab 100%) !important;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }
 
-/* 2. TARJETAS (CARDS) FLOTANTES */
-/* Quitamos bordes duros y ponemos sombras suaves */
+.content-wrapper {
+    background: transparent !important; /* Dejamos ver el degradado */
+}
+
+/* Animación de entrada: Todo el contenido aparece suavemente */
+.content {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   2. TARJETAS "GLASSMORPHISM" (Cristal)
+   ========================================= */
 .card {
+    background: rgba(255, 255, 255, 0.95) !important; /* Casi blanco, un pelín transparente */
+    backdrop-filter: blur(10px); /* Efecto borroso detrás */
     border: none !important;
-    border-radius: 15px !important;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.05) !important; /* Sombra suave */
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 20px !important; /* Bordes muy redondos */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important; /* Sombra difusa */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     margin-bottom: 25px !important;
+    overflow: hidden; /* Para que la cabecera no se salga de los bordes redondos */
 }
 
-/* Efecto al pasar el mouse por encima de una tarjeta */
 .card:hover {
-    transform: translateY(-3px); /* Se levanta un poco */
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+    transform: translateY(-5px); /* Se eleva */
+    box-shadow: 0 15px 35px rgba(0,0,0,0.12) !important;
 }
 
 .card-header {
-    background-color: transparent !important;
-    border-bottom: 1px solid #f0f0f0 !important;
-    padding: 20px 25px !important;
+    background: linear-gradient(90deg, #fdfbfb 0%, #ebedee 100%) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+    padding: 15px 25px !important;
 }
 
 .card-title {
-    font-weight: 700 !important;
     color: #2c3e50;
-    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.9rem !important;
 }
 
-/* 3. CAMPOS DE TEXTO (INPUTS) MODERNOS */
-/* Estilo "Bubble": fondo gris claro, sin borde, redondeados */
-.form-control, .select2-container--default .select2-selection--single {
-    background-color: #f9fafb !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 10px !important;
-    height: 45px !important; /* Más altos para ser más fáciles de clicar */
-    padding-left: 15px !important;
-    font-size: 0.95rem;
-    transition: all 0.2s;
+/* =========================================
+   3. BOTONES CON "ALMA"
+   ========================================= */
+.btn {
+    border-radius: 50px !important; /* Botones píldora (redondos) */
+    padding: 8px 25px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 0.8rem !important;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.btn-primary, .btn-success {
+    /* Degradado moderno Azul-Violeta */
+    background: linear-gradient(87deg, #5e72e4 0%, #825ee4 100%) !important;
+    color: white !important;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+    filter: brightness(1.1);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+/* Botones de acción pequeña (editar/borrar) */
+.btn-xs, .btn-sm {
+    padding: 5px 15px !important;
+}
+
+/* =========================================
+   4. INPUTS FLUIDOS
+   ========================================= */
+.form-control, .select2-selection {
+    background-color: #f4f7fa !important;
+    border: 2px solid transparent !important;
+    border-radius: 12px !important;
+    height: 45px !important;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .form-control:focus {
     background-color: #fff !important;
-    border-color: #3b82f6 !important; /* Azul moderno al escribir */
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    border-color: #5e72e4 !important; /* Borde de color al escribir */
+    box-shadow: 0 0 0 4px rgba(94, 114, 228, 0.15) !important; /* Resplandor suave */
 }
 
-/* 4. BOTONES "APPLE STYLE" */
-.btn {
-    border-radius: 10px !important;
-    padding: 8px 20px !important;
-    font-weight: 600 !important;
-    border: none !important;
-    letter-spacing: 0.3px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-}
-
-/* Botón primario (Guardar) */
-.btn-primary, .btn-success {
-    background: linear-gradient(135deg, #0f172a 0%, #334155 100%) !important; /* Degradado elegante oscuro */
-    color: white !important;
-}
-.btn-primary:hover, .btn-success:hover {
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3) !important;
-    transform: scale(1.02);
-}
-
-/* Botón peligro (Borrar) */
-.btn-danger {
-    background-color: #fee2e2 !important;
-    color: #ef4444 !important;
-}
-.btn-danger:hover {
-    background-color: #fecaca !important;
-}
-
-/* 5. TABLAS MÁS LIMPIAS */
+/* =========================================
+   5. TABLAS ELEGANTES
+   ========================================= */
 .table {
-    border-collapse: separate !important;
-    border-spacing: 0 5px !important; /* Espacio entre filas */
+    border-collapse: separate;
+    border-spacing: 0 8px; /* Separación real entre filas */
 }
 
 .table thead th {
     border: none !important;
-    text-transform: uppercase;
+    color: #8898aa;
     font-size: 0.75rem;
-    color: #6b7280;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding-bottom: 15px !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-left: 20px !important;
 }
 
 .table tbody tr {
     background-color: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    transition: background 0.1s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    transition: transform 0.2s;
 }
 
 .table tbody tr:hover {
-    background-color: #f8fafc !important; /* Highlight al pasar mouse */
+    transform: scale(1.01); /* La fila crece un poquito al pasar el mouse */
+    z-index: 10;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
 }
 
 .table td {
     border: none !important;
-    padding: 15px 15px !important;
     vertical-align: middle !important;
+    padding: 15px 20px !important;
 }
 
-/* Bordes redondeados para las filas de la tabla */
+/* Bordes redondeados en las filas de la tabla */
 .table tbody tr td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
 .table tbody tr td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
 
-/* 6. BARRA LATERAL (SIDEBAR) */
+/* =========================================
+   6. SIDEBAR (MENU LATERAL) OSCURO & MODERNO
+   ========================================= */
 .main-sidebar {
-    box-shadow: none !important;
-    border-right: 1px solid #e5e7eb;
-    background-color: #fff !important; /* Sidebar blanca limpia */
+    background: #172b4d !important; /* Azul muy oscuro (Casi negro) */
+    box-shadow: 5px 0 15px rgba(0,0,0,0.1);
 }
 
 .brand-link {
-    border-bottom: 1px solid #f3f4f6 !important;
-    color: #111827 !important; /* Texto negro */
-    background-color: #fff !important;
+    background: #12213b !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
 }
 
-/* Enlaces del menú */
-.nav-sidebar .nav-item .nav-link {
-    color: #4b5563 !important;
-    border-radius: 10px !important;
-    margin: 2px 10px !important;
+.nav-link {
+    border-radius: 30px !important; /* Enlaces redondos */
+    margin: 5px 10px !important;
+    color: rgba(255,255,255,0.8) !important;
 }
 
-.nav-sidebar .nav-item .nav-link.active {
-    background-color: #eff6ff !important; /* Azul muy clarito */
-    color: #2563eb !important; /* Texto azul */
-    font-weight: 700;
-}
-.nav-sidebar .nav-item .nav-link:hover {
-    background-color: #f3f4f6 !important;
-    color: #111827 !important;
+.nav-link.active {
+    background: white !important;
+    color: #5e72e4 !important; /* Texto azul sobre fondo blanco */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    font-weight: bold;
 }
 
-/* Iconos del menú */
-.nav-icon {
-    color: #9ca3af;
-}
-.nav-link.active .nav-icon {
-    color: #2563eb !important;
+.nav-link:hover:not(.active) {
+    background: rgba(255,255,255,0.1) !important;
+    transform: translateX(5px); /* Se mueve a la derecha al tocar */
+    transition: transform 0.2s;
 }

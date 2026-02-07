@@ -163,7 +163,7 @@ JAZZMIN_UI_TWEAKS = {
     "footer_small_text": False,
     "body_small_text": False,
     "brand_small_text": False,
-    "brand_colour": "navbar-white",
+    "brand_colour": "navbar-dark",  # <--- MARCA OSCURA
     "accent": "accent-primary",
     "navbar": "navbar-white navbar-light",
     "no_navbar_border": True,
@@ -171,9 +171,9 @@ JAZZMIN_UI_TWEAKS = {
     "layout_boxed": False,
     "footer_fixed": False,
     "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary",
+    "sidebar": "sidebar-dark-primary", # <--- SIDEBAR OSCURA (IMPORTANTE)
     "sidebar_nav_small_text": False,
-    "theme": "materia",  # Tema base moderno
+    "theme": "materia", 
     "button_classes": {
         "primary": "btn-primary",
         "secondary": "btn-secondary",
