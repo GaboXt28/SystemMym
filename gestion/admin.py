@@ -28,12 +28,13 @@ except admin.sites.NotRegistered:
     pass
 admin.site.register(User, UserAdmin)
 
-# --- 1. CONFIGURACIÓN DE PRODUCTOS ---
+# --- 1. CONFIGURACIÓN DE PRODUCTOS (ORDENADO A-Z) ---
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_unitario', 'stock_actual', 'alerta_stock')
     search_fields = ('nombre',)
     list_per_page = 20
+    ordering = ('nombre',)  # <--- NUEVO: Orden alfabético por nombre
 
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_superuser:
@@ -184,13 +185,14 @@ class AsistenciaAdmin(admin.ModelAdmin):
             return qs 
         return qs.filter(usuario=request.user)
 
-# --- 3. CONFIGURACIÓN DE CLIENTES ---
+# --- 3. CONFIGURACIÓN DE CLIENTES (ORDENADO A-Z) ---
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre_contacto', 'celular', 'ciudad', 'estado_deuda_visual', 'acciones_cobranza')
     search_fields = ('nombre_contacto', 'nombre_empresa')
     list_filter = ('ciudad',)
     list_per_page = 20
+    ordering = ('nombre_contacto',) # <--- NUEVO: Orden alfabético por nombre de contacto
 
     def estado_deuda_visual(self, obj):
         guias_pendientes = obj.guiaentrega_set.exclude(estado_pago='PAGADO')
