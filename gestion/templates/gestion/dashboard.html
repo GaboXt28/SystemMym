@@ -1,303 +1,250 @@
 {% extends "admin/base_site.html" %}
-
 {% load static %}
-
-
 
 {% block content %}
 
 <div class="container-fluid">
 
-
-
     <div class="row mb-4">
-
         <div class="col-12">
-
             <div class="card shadow-sm">
-
                 <div class="card-header bg-primary text-white">
-
                     <h3 class="card-title m-0"><i class="fas fa-chart-line"></i> Dashboard Gerencial</h3>
-
                 </div>
-
                 <div class="card-body">
-
                     <form method="get" class="row align-items-end">
-
                         <div class="col-md-3">
-
                             <label class="font-weight-bold">Desde:</label>
-
                             <input type="date" name="fecha_inicio" class="form-control" value="{{ fecha_inicio }}">
-
                         </div>
-
-
 
                         <div class="col-md-3">
-
                             <label class="font-weight-bold">Hasta:</label>
-
                             <input type="date" name="fecha_fin" class="form-control" value="{{ fecha_fin }}">
-
                         </div>
 
-
-
                         <div class="col-md-2">
-
                             <button type="submit" class="btn btn-info btn-block">
-
                                 <i class="fas fa-filter"></i> Filtrar
-
                             </button>
-
                         </div>
-
-
 
                         <div class="col-md-2">
-
-                            <button type="submit" formaction="{% url 'exportar_excel' %}"
-
-                                class="btn btn-success btn-block">
-
+                            <button type="submit" formaction="{% url 'exportar_excel' %}" class="btn btn-success btn-block">
                                 <i class="fas fa-file-excel"></i> Excel
-
                             </button>
-
                         </div>
-
-
 
                         <div class="col-md-2 text-right">
-
                             <small class="text-muted">Rango actual</small>
-
                         </div>
-
                     </form>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
-
-
     <div class="row">
-
         <div class="col-lg-3 col-6">
-
             <div class="small-box bg-info">
-
                 <div class="inner">
-
                     <h3>S/. {{ total_ventas|floatformat:2 }}</h3>
-
                     <p>Ventas Totales</p>
-
                 </div>
-
                 <div class="icon"><i class="fas fa-shopping-cart"></i></div>
-
             </div>
-
         </div>
-
         <div class="col-lg-3 col-6">
-
             <div class="small-box bg-danger">
-
                 <div class="inner">
-
                     <h3>S/. {{ total_gastos|floatformat:2 }}</h3>
-
                     <p>Gastos & Compras</p>
-
                 </div>
-
                 <div class="icon"><i class="fas fa-file-invoice-dollar"></i></div>
-
             </div>
-
         </div>
-
         <div class="col-lg-3 col-6">
-
             <div class="small-box bg-success">
-
                 <div class="inner">
-
                     <h3>S/. {{ ganancia_neta|floatformat:2 }}</h3>
-
                     <p>Utilidad / Ganancia</p>
-
                 </div>
-
                 <div class="icon"><i class="fas fa-chart-line"></i></div>
-
             </div>
-
         </div>
-
         <div class="col-lg-3 col-6">
-
             <div class="small-box bg-warning">
-
                 <div class="inner">
-
                     <h3>S/. {{ deuda_calle|floatformat:2 }}</h3>
-
                     <p>Clientes me Deben (Total)</p>
-
                 </div>
-
                 <div class="icon"><i class="fas fa-hand-holding-usd"></i></div>
-
             </div>
-
         </div>
-
     </div>
 
-
-
     <div class="row">
-
-
-
         <div class="col-md-6">
-
             <div class="card card-primary card-outline">
-
                 <div class="card-header">
-
                     <h3 class="card-title">Balance: Ingresos vs Gastos</h3>
-
                 </div>
-
                 <div class="card-body">
-
-                    <canvas id="balanceChart"
-
-                        style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-
+                    <canvas id="balanceChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
                 </div>
-
             </div>
-
         </div>
-
-
 
         <div class="col-md-6">
-
             <div class="card card-danger card-outline">
-
                 <div class="card-header">
-
-                    <h3 class="card-title"><i class="fas fa-exclamation-triangle"></i> 🚨 Alerta: Stock Bajo (Menos de
-
-                        10)</h3>
-
+                    <h3 class="card-title"><i class="fas fa-exclamation-triangle"></i> 🚨 Alerta: Stock Bajo (Menos de 10)</h3>
                 </div>
-
                 <div class="card-body p-0">
-
                     <table class="table table-striped">
-
                         <thead>
-
                             <tr>
-
                                 <th>Producto</th>
-
                                 <th style="width: 40px">Stock</th>
-
                             </tr>
-
                         </thead>
-
                         <tbody>
-
                             {% for prod in productos_bajo_stock %}
-
                             <tr>
-
                                 <td>{{ prod.nombre }}</td>
-
-                                <td><span class="badge bg-danger" style="font-size:1em;">{{ prod.stock_actual }}</span>
-
-                                </td>
-
+                                <td><span class="badge bg-danger" style="font-size:1em;">{{ prod.stock_actual }}</span></td>
                             </tr>
-
                             {% empty %}
-
                             <tr>
-
                                 <td colspan="2" class="text-center text-success">✅ Inventario Saludable</td>
-
                             </tr>
-
                             {% endfor %}
-
                         </tbody>
-
                     </table>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
 </div>
 
+<div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <button id="theme-toggle" class="btn btn-dark" style="border-radius: 50%; width: 50px; height: 50px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); font-size: 22px; display: flex; align-items: center; justify-content: center;" title="Cambiar Modo Oscuro/Claro">
+        🌙
+    </button>
+</div>
 
+<style>
+    /* Estilos forzados para AdminLTE/Jazzmin en Modo Oscuro */
+    body.dark-mode-custom {
+        background-color: #454d55 !important;
+        color: #f8f9fa !important;
+    }
+    
+    /* Fondo principal del contenido */
+    body.dark-mode-custom .content-wrapper,
+    body.dark-mode-custom .main-header,
+    body.dark-mode-custom .content {
+        background-color: #343a40 !important;
+        color: #ffffff !important;
+    }
+
+    /* Tarjetas */
+    body.dark-mode-custom .card {
+        background-color: #454d55 !important;
+        color: #ffffff !important;
+        border: 1px solid #6c757d;
+    }
+    
+    body.dark-mode-custom .card-header {
+        border-bottom: 1px solid #6c757d !important;
+    }
+
+    /* Tablas */
+    body.dark-mode-custom .table {
+        color: #fff !important;
+        background-color: #454d55 !important;
+    }
+    body.dark-mode-custom .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(255,255,255,0.05) !important;
+    }
+
+    /* Inputs y formularios */
+    body.dark-mode-custom .form-control {
+        background-color: #343a40 !important;
+        border: 1px solid #6c757d !important;
+        color: #fff !important;
+    }
+    body.dark-mode-custom .form-control:focus {
+        background-color: #3f474e !important;
+        color: #fff !important;
+    }
+    
+    /* Texto muted */
+    body.dark-mode-custom .text-muted {
+        color: #adb5bd !important;
+    }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-
+    // --- 1. Lógica del Gráfico (Tu código original) ---
     var ctx = document.getElementById('balanceChart').getContext('2d');
-
     var myChart = new Chart(ctx, {
-
         type: 'doughnut',
-
         data: {
-
             labels: ['Ventas (Ingresos)', 'Gastos (Egresos)'],
-
             datasets: [{
-
                 data: [{{ total_ventas }}, {{ total_gastos }}],
-
-        backgroundColor: ['#17a2b8', '#dc3545'],
-
-    }]
-
+                backgroundColor: ['#17a2b8', '#dc3545'],
+                borderWidth: 1
+            }]
         },
-
-    options: {
-
-        responsive: true,
-
+        options: {
+            responsive: true,
             maintainAspectRatio: false,
-
         }
-
     });
 
+    // --- 2. Lógica del Modo Oscuro (Nuevo) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleButton = document.getElementById('theme-toggle');
+        const body = document.body;
+        
+        // Función para aplicar estilos
+        function aplicarTema(esOscuro) {
+            if (esOscuro) {
+                body.classList.add('dark-mode-custom');
+                // Cambios específicos de Jazzmin/AdminLTE si existen
+                if(document.querySelector('.main-header')) document.querySelector('.main-header').classList.add('navbar-dark');
+                
+                toggleButton.innerText = '☀️';
+                toggleButton.classList.remove('btn-dark');
+                toggleButton.classList.add('btn-light');
+            } else {
+                body.classList.remove('dark-mode-custom');
+                if(document.querySelector('.main-header')) document.querySelector('.main-header').classList.remove('navbar-dark');
+                
+                toggleButton.innerText = '🌙';
+                toggleButton.classList.remove('btn-light');
+                toggleButton.classList.add('btn-dark');
+            }
+        }
+
+        // Revisar preferencia guardada al cargar
+        const preferenciaGuardada = localStorage.getItem('theme');
+        if (preferenciaGuardada === 'dark') {
+            aplicarTema(true);
+        }
+
+        // Evento Click
+        toggleButton.addEventListener('click', () => {
+            const esOscuro = !body.classList.contains('dark-mode-custom');
+            aplicarTema(esOscuro);
+            localStorage.setItem('theme', esOscuro ? 'dark' : 'light');
+        });
+    });
 </script>
 
 {% endblock %}
