@@ -160,3 +160,56 @@ body {
 .main-header .btn-navbar {
     color: #344767 !important;
 }
+
+/* --- BOTÓN FLOTANTE DE VOLVER (Responsive & Top-Left) --- */
+#btn-volver-flotante {
+    position: fixed;
+    /* Posición para PC: Debajo del navbar para no tapar el menú */
+    top: 75px; 
+    left: 20px; 
+    z-index: 9999;
+    
+    /* Estilo Glassmorphism (Cristal) */
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: #344767; /* Color oscuro elegante */
+    
+    border-radius: 30px;
+    padding: 8px 20px;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+#btn-volver-flotante:hover {
+    background: #fff;
+    transform: translateX(3px); /* Se mueve un poquito a la derecha */
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    color: #5e72e4; /* Se pone azul al tocar */
+}
+
+/* --- VERSIÓN MÓVIL (Celulares) --- */
+@media (max-width: 768px) {
+    #btn-volver-flotante {
+        top: 65px; /* Un poco más arriba en celular */
+        left: 10px; /* Más pegado al borde */
+        padding: 6px 15px; /* Más pequeño */
+        font-size: 0.75rem; /* Letra más chica */
+        background: rgba(255, 255, 255, 0.95); /* Más sólido para que se lea mejor */
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+}
+
+/* Ocultar en impresión */
+@media print {
+    #btn-volver-flotante { display: none !important; }
+}

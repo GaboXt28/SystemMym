@@ -13,7 +13,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-nae_=9++)5)-(_!6me6c_!^5ot_aj@r^vjkmpdt1=l0ovn*wz6')
 
 # --- SEGURIDAD: MODO PRODUCCIÓN ---
-# Lo ponemos en False para seguridad. Ya aplicamos el parche, así que el error debería desaparecer.
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
@@ -48,10 +47,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
+# --- ¡AQUÍ ESTÁ EL CAMBIO IMPORTANTE! ---
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # <--- ¡CORREGIDO! Ahora Django ve tu carpeta templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -96,7 +96,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- SISTEMA DE LOGS (PARA VER ERRORES EN RENDER) ---
+# --- SISTEMA DE LOGS ---
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -121,7 +121,7 @@ JAZZMIN_SETTINGS = {
 
     # Menú superior
     "topmenu_links": [
-        {"name": "🏠 Dashboard",  "url": "home", "permissions": ["auth.view_user"]}, # Solo Admin ve esto gracias a views.py
+        {"name": "🏠 Dashboard",  "url": "home", "permissions": ["auth.view_user"]}, 
         {"name": "⚙️ Panel Admin", "url": "admin:index", "permissions": ["auth.view_user"]},
     ],
 
@@ -149,8 +149,7 @@ JAZZMIN_SETTINGS = {
     # Enlazamos tu JS personalizado
     "custom_js": "gestion/js/custom_admin.js",
     
-    # --- ¡AQUÍ ESTÁ EL CAMBIO CLAVE! ---
-    # Enlazamos tu CSS personalizado para el diseño moderno
+    # Enlazamos tu CSS personalizado
     "custom_css": "gestion/css/custom_admin.css",
 }
 
@@ -163,7 +162,7 @@ JAZZMIN_UI_TWEAKS = {
     "footer_small_text": False,
     "body_small_text": False,
     "brand_small_text": False,
-    "brand_colour": "navbar-dark",  # <--- MARCA OSCURA
+    "brand_colour": "navbar-dark",  
     "accent": "accent-primary",
     "navbar": "navbar-white navbar-light",
     "no_navbar_border": True,
@@ -171,7 +170,7 @@ JAZZMIN_UI_TWEAKS = {
     "layout_boxed": False,
     "footer_fixed": False,
     "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary", # <--- SIDEBAR OSCURA (IMPORTANTE)
+    "sidebar": "sidebar-dark-primary", 
     "sidebar_nav_small_text": False,
     "theme": "materia", 
     "button_classes": {
@@ -187,19 +186,13 @@ JAZZMIN_UI_TWEAKS = {
 # ==============================================================================
 # 🚑 PARCHE DE EMERGENCIA: SOLUCIÓN ERROR 500 (Jazzmin + Django 5.0)
 # ==============================================================================
-# Este código intercepta el error de la paginación y lo corrige automáticamente.
-# No borres esto hasta que Jazzmin saque una actualización oficial.
 from django.utils import html
 original_format_html = html.format_html
 
 def patched_format_html(format_string, *args, **kwargs):
-    # Si Jazzmin llama a la función sin argumentos (el error que te salía),
-    # usamos mark_safe para que no explote.
     if not args and not kwargs:
         return html.mark_safe(format_string)
-    # Si es una llamada normal, dejamos que Django haga su trabajo.
     return original_format_html(format_string, *args, **kwargs)
 
-# Aplicamos el parche al sistema
 html.format_html = patched_format_html
 # ==============================================================================
