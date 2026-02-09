@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %} 
+{% load static %}
+
+{% block footer %}
+{{ block.super }} <div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <button id="theme-toggle" class="btn btn-dark" style="border-radius: 50%; width: 50px; height: 50px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); font-size: 22px; display: flex; align-items: center; justify-content: center;" title="Modo Oscuro/Claro">
+        🌙
+    </button>
+</div>
+
+<style>
+    /* Estilos para forzar modo oscuro en Jazzmin/AdminLTE */
+    body.dark-mode-custom { background-color: #454d55 !important; color: #f8f9fa !important; }
+    body.dark-mode-custom .content-wrapper, body.dark-mode-custom .main-header, body.dark-mode-custom .main-sidebar { background-color: #343a40 !important; color: #fff !important; }
+    body.dark-mode-custom .card, body.dark-mode-custom .table { background-color: #454d55 !important; color: #fff !important; }
+    body.dark-mode-custom .form-control { background-color: #343a40 !important; border: 1px solid #6c757d !important; color: #fff !important; }
+    body.dark-mode-custom .table-striped tbody tr:nth-of-type(odd) { background-color: rgba(255,255,255,0.05) !important; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleButton = document.getElementById('theme-toggle');
+        const body = document.body;
+        
+        // Función para aplicar tema
+        function aplicarTema(esOscuro) {
+            if (esOscuro) {
+                body.classList.add('dark-mode-custom');
+                toggleButton.innerText = '☀️';
+                toggleButton.classList.remove('btn-dark');
+                toggleButton.classList.add('btn-light');
+            } else {
+                body.classList.remove('dark-mode-custom');
+                toggleButton.innerText = '🌙';
+                toggleButton.classList.remove('btn-light');
+                toggleButton.classList.add('btn-dark');
+            }
+        }
+
+        // Leer memoria
+        if (localStorage.getItem('theme') === 'dark') { aplicarTema(true); }
+
+        // Click
+        toggleButton.addEventListener('click', () => {
+            const esOscuro = !body.classList.contains('dark-mode-custom');
+            aplicarTema(esOscuro);
+            localStorage.setItem('theme', esOscuro ? 'dark' : 'light');
+        });
+    });
+</script>
+{% endblock %}
