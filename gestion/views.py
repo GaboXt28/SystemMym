@@ -3,7 +3,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
-from django.db.models import Sum
+from django.db.models import Sum, Count  # <--- SE AGREGÓ 'Count' AQUÍ
 from django.utils import timezone
 from datetime import datetime, timedelta
 from xhtml2pdf import pisa
@@ -216,3 +216,43 @@ def api_info_cliente(request, cliente_id):
         return JsonResponse({'direccion': direccion})
     except Cliente.DoesNotExist:
         return JsonResponse({'error': 'Cliente no encontrado', 'direccion': ''}, status=404)
+
+# --- VISTA 7: REPORTE DE ASESORES (NUEVA) ---
+@login_required(login_url='/adminconfiguracion/login/')
+def reporte_asesores(request):
+    
+    # ⛔ SEGURIDAD: Solo visible para el admin/jefe
+    if not request.user.is_superuser:
+        return redirect('/adminconfiguracion/')
+
+    # 1. Obtener fechas del filtro
+    hoy = timezone.now().date()
+    inicio_mes = hoy.replace(day=1)
+    
+    fecha_inicio = request.GET.get('fecha_inicio', inicio_mes.strftime('%Y-%m-%d'))
+    fecha_fin = request.GET.get('fecha_fin', hoy.strftime('%Y-%m-%d'))
+
+    # 2. Filtramos las ventas (GuiaEntrega)
+    ventas = GuiaEntrega.objects.filter(fecha_emision__range=[fecha_inicio, fecha_fin])
+
+    # 3. Agrupamos por usuario
+    # IMPORTANTE: Esto asume que tu modelo GuiaEntrega tiene un campo 'usuario'.
+    # Si en tu modelo se llama 'vendedor', cambia 'usuario' por 'vendedor' abajo.
+    reporte = ventas.values(
+        'usuario__username', 
+        'usuario__first_name', 
+        'usuario__last_name'
+    ).annotate(
+        cantidad_ventas=Count('id'),
+        total_dinero=Sum('total_venta')
+    ).order_by('-total_dinero')
+
+    # 4. Contexto para el template (incluyendo menú lateral de admin)
+    context = admin.site.each_context(request)
+    context.update({
+        'reporte': reporte,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+    })
+    
+    return render(request, 'gestion/reporte_asesores.html', context)

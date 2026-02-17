@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">📊 Rendimiento de Asesores</h2>
+
+    <div class="card p-3 mb-4 bg-light">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Desde:</label>
+                <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Hasta:</label>
+                <input type="date" name="fecha_fin" value="{{ fecha_fin }}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">🔍 Filtrar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Asesor</th>
+                    <th class="text-center">Cant. Ventas</th>
+                    <th class="text-end">Total Vendido (S/)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in reporte %}
+                <tr>
+                    <td>
+                        {% if fila.usuario__first_name %}
+                            {{ fila.usuario__first_name }} {{ fila.usuario__last_name }}
+                        {% else %}
+                            {{ fila.usuario__username }}
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ fila.cantidad_ventas }}</td>
+                    <td class="text-end font-weight-bold">
+                        S/ {{ fila.total_dinero|floatformat:2 }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted">No hay ventas en este rango de fechas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="table-secondary">
+                 <tr>
+                     <td><strong>TOTALES</strong></td>
+                     <td class="text-center"><strong>{{ reporte|length }} Asesores</strong></td>
+                     <td class="text-end"><strong></strong></td>
+                 </tr>
+             </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -10,8 +10,9 @@ from gestion.views import (
     generar_pdf_guia,
     exportar_reporte_excel,
     health_check,
-    api_info_producto, # <--- La API del producto
-    api_info_cliente   # <--- La API del cliente
+    api_info_producto,
+    api_info_cliente,
+    reporte_asesores  # <--- AGREGADO: La nueva vista
 )
 
 urlpatterns = [
@@ -27,6 +28,9 @@ urlpatterns = [
     path('dashboard/', dashboard_analiticas, name='dashboard_analytics'),
     path('imprimir/guia/<int:guia_id>/', generar_pdf_guia, name='imprimir_guia'),
     path('reporte/excel/', exportar_reporte_excel, name='exportar_excel'),
+    
+    # --- NUEVA RUTA: REPORTE DE ASESORES ---
+    path('reporte/asesores/', reporte_asesores, name='reporte_asesores'),
 
     # 4. SALUD DEL SISTEMA (CRON JOBS)
     path('health/', health_check, name='health_check'),
