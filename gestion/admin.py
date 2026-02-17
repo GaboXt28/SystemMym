@@ -337,4 +337,4 @@ class GastoAdmin(admin.ModelAdmin):
     def estado_color(self, obj):
         color = 'green' if obj.estado == 'PAGADO' else 'red'
         return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, obj.get_estado_display())
-    estado_color.short_description = "Estado"
+    estado_color.short_description = "Estado"   
